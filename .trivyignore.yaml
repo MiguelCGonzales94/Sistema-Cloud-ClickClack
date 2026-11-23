@@ -1,0 +1,28 @@
+# Hallazgos de Trivy aceptados de forma explícita (OWASP A06; ISO/IEC 27001:2022 8.8).
+# Todo hallazgo HIGH o CRITICAL que no esté aquí hace fallar el CI. Cada excepción lleva su motivo y una fecha
+# de caducidad: al vencer, el hallazgo vuelve a aparecer y obliga a revisarlo.
+# Estado al 2026-11-23: backend con 4 hallazgos aceptados; frontends y proxy en 0.
+# Los motivos se comprobaron buscando en backend/src/main; no es un análisis de alcance completo.
+vulnerabilities:
+  - id: CVE-2026-47884
+    statement: >-
+      spring-webmvc 6.2.19 (CRITICAL). Afecta a las vistas XSLT. El backend es una API REST: no usa vistas, ni
+      XSLT, ni motores de plantillas (sin coincidencias en el código). La corrección solo existe en Spring
+      Framework 7.0.9, un salto de versión mayor que no cabe en este proyecto.
+    expired_at: 2026-12-31
+  - id: CVE-2026-47890
+    statement: >-
+      spring-webmvc 6.2.19 (CRITICAL). Afecta a Server-Sent Events con vistas. El código no usa SseEmitter,
+      text/event-stream ni WebFlux. Misma corrección que el anterior: Spring Framework 7.0.9.
+    expired_at: 2026-12-31
+  - id: CVE-2026-54399
+    statement: >-
+      httpcore5 5.3.6 (HIGH, denegación de servicio por exceso de cabeceras). Llega como dependencia transitiva
+      de la librería WebAuthn. El cliente HTTP propio del proyecto es el del JDK (java.net.http), no httpcore5, y el
+      servidor es Tomcat. Sin probar: subir httpcore5 a 5.4.3 podría romper la compatibilidad con httpclient5.
+    expired_at: 2026-12-31
+  - id: CVE-2026-54428
+    statement: >-
+      httpcore5-h2 5.3.6 (HIGH, denegación de servicio por cabeceras HPACK de tamaño excesivo). Misma dependencia
+      transitiva y mismo motivo que CVE-2026-54399.
+    expired_at: 2026-12-31

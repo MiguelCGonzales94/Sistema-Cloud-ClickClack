@@ -48,7 +48,7 @@ jobs:
           mkdir -p "$HOME/.cache/trivy"
           docker run --rm -v "$PWD":/src:ro -v "$HOME/.cache/trivy":/root/.cache/trivy "$TRIVY" \
             fs --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 \
-            --ignorefile /src/.trivyignore --skip-dirs /src/docs/evidencias /src
+            --ignorefile /src/.trivyignore.yaml --skip-dirs /src/docs/evidencias /src
 
       # Informativo: no falla. Lista malas configuraciones en Dockerfile y compose para revisarlas.
       - name: Configuración de Dockerfile y compose (informativo)
@@ -85,6 +85,6 @@ jobs:
         run: |
           mkdir -p "$HOME/.cache/trivy"
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "$PWD/.trivyignore":/.trivyignore:ro -v "$HOME/.cache/trivy":/root/.cache/trivy "$TRIVY" \
-            image --severity HIGH,CRITICAL --exit-code 1 --ignorefile /.trivyignore \
+            -v "$PWD/.trivyignore.yaml":/.trivyignore.yaml:ro -v "$HOME/.cache/trivy":/root/.cache/trivy "$TRIVY" \
+            image --severity HIGH,CRITICAL --exit-code 1 --ignorefile /.trivyignore.yaml \
             "clickclak-${{ matrix.nombre }}:ci"

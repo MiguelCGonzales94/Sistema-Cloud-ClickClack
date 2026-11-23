@@ -1,4 +1,0 @@
-# Hallazgos de Trivy aceptados de forma explícita. Cada línea debe llevar su justificación y una fecha de revisión.
-# Formato: un identificador (CVE-… o GHSA-…) por línea. Sin entradas: todo hallazgo HIGH/CRITICAL falla el CI.
-#
-# (Se completa tras la primera ejecución del CI con los hallazgos reales del backend.)
