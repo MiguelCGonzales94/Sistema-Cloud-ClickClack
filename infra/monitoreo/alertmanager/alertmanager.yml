@@ -1,0 +1,13 @@
+# Alertmanager: agrupa las alertas y las deja visibles (interfaz de Alertmanager y panel de alertas
+# de Grafana). No hay servidor de correo en el proyecto, así que no se envían notificaciones
+# externas: el receptor `tablero` no tiene canal de salida. Declarado como límite en el informe;
+# añadir un receptor (correo, Teams, Slack) es solo agregar su bloque aquí.
+route:
+  receiver: tablero
+  group_by: [alertname, nodo]
+  group_wait: 5s
+  group_interval: 30s
+  repeat_interval: 1h
+
+receivers:
+  - name: tablero

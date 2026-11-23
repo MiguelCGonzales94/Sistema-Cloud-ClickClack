@@ -1,0 +1,13 @@
+{
+  "rules": [
+    {
+      "enabled": true,
+      "name": "borrar-a-los-14-dias",
+      "type": "Lifecycle",
+      "definition": {
+        "actions": { "baseBlob": { "delete": { "daysAfterModificationGreaterThan": 14 } } },
+        "filters": { "blobTypes": ["blockBlob"], "prefixMatch": ["respaldos/"] }
+      }
+    }
+  ]
+}

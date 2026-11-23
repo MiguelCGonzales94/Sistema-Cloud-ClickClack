@@ -1,0 +1,28 @@
+# Rol del NODO 1 (PRIMARIA de PostgreSQL). Se copia en la VM como infra/docker-compose.nodo.yml.
+# Publica PostgreSQL SOLO en la IP privada de la VM y autoriza la replicación solo al nodo 2.
+# Internet no llega: el NSG no abre el 5432 y aquí no se enlaza a 0.0.0.0.
+#
+# El backend usa la misma URL multi-host en los DOS nodos (ver nodo2.yml): sigue a la primaria,
+# esté en el nodo que esté, sin proxy de base de datos.
+services:
+  postgres:
+    environment:
+      SLOTS_EXTRA: nodo2_slot       # ranura propia de la réplica remota
+      REPLICA_CIDR: 10.0.0.5/32     # IP privada del nodo 2
+    ports:
+      - "10.0.0.4:5432:5432"        # IP privada del nodo 1
+
+  # La réplica local de la instalación de una sola VM no se usa con dos nodos: la standby vive en el otro nodo.
+  postgres-replica:
+    profiles: ["replica-local-desactivada"]
+
+  backend:
+    # Métricas para Prometheus: solo en la IP privada del nodo (el proxy no enruta /actuator).
+    ports:
+      - "10.0.0.4:8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://10.0.0.4:5432,10.0.0.5:5432/clickclak?targetServerType=primary&connectTimeout=3&sslmode=verify-full&sslrootcert=/certs/ca.crt
+
+  proxy:
+    environment:
+      NODO: nodo1

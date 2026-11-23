@@ -1,0 +1,65 @@
+# Rol del NODO 2 (STANDBY de PostgreSQL). Se copia en la VM como infra/docker-compose.nodo.yml.
+# `postgres` deja de ser primaria: copia al nodo 1 con pg_basebackup y queda en hot standby.
+# La réplica local del compose base se desactiva (perfil que nadie activa).
+# El backend se conecta con JDBC multi-host y `targetServerType=primary`: el driver prueba los
+# hosts en orden y se queda con el que NO está en recuperación, así sigue a la primaria tras un
+# failover sin proxy de base de datos. Es mejor listar los hosts que usar un nombre DNS.
+services:
+  postgres:
+    entrypoint: ["sh", "/replicacion/entrada-replica.sh"]
+    # Solo en la IP privada del nodo: el backend de los dos nodos la tiene en su URL, así que si esta
+    # standby se promueve, `targetServerType=primary` la encuentra sin tocar nada más.
+    ports:
+      - "10.0.0.5:5432:5432"
+    environment:
+      PRIMARY_HOST: 10.0.0.4        # IP privada del nodo 1
+      REPLICA_SLOT: nodo2_slot
+      REPLICA_PASSWORD: ${REPLICA_PASSWORD:?Falta REPLICA_PASSWORD en infra/.env}
+    # Mismos valores que la primaria: una réplica no arranca con menos max_connections o
+    # max_wal_senders que su primaria.
+    command:
+      - -c
+      - hot_standby=on
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - effective_cache_size=512MB
+      - -c
+      - max_connections=50
+      - -c
+      - work_mem=4MB
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=5
+      - -c
+      - max_replication_slots=2
+      - -c
+      - max_slot_wal_keep_size=2GB
+      # Necesario para pg_rewind: permite reincorporar a la primaria vieja sin reconstruirla.
+      - -c
+      - wal_log_hints=on
+      # TLS entre nodos y hacia la aplicación (OWASP A02; ISO 27001 8.24). El certificado lo firma la CA
+      # interna y lleva la IP del nodo en el SAN; los clientes verifican la cadena y la IP (verify-full).
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/certs/server.crt
+      - -c
+      - ssl_key_file=/certs/server.key
+      - -c
+      - ssl_min_protocol_version=TLSv1.2
+
+  postgres-replica:
+    profiles: ["replica-local-desactivada"]
+
+  backend:
+    # Métricas para Prometheus: solo en la IP privada del nodo (el proxy no enruta /actuator).
+    ports:
+      - "10.0.0.5:8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://10.0.0.4:5432,10.0.0.5:5432/clickclak?targetServerType=primary&connectTimeout=3&sslmode=verify-full&sslrootcert=/certs/ca.crt
+
+  proxy:
+    environment:
+      NODO: nodo2

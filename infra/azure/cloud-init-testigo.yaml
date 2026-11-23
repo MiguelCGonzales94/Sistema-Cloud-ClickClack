@@ -1,0 +1,17 @@
+#cloud-config
+# Aprovisionamiento del TESTIGO (tercer servidor): quórum, observabilidad y respaldos.
+# No aloja datos de la aplicación; ejecuta Prometheus, Alertmanager, Grafana y la sonda externa.
+package_update: true
+package_upgrade: false
+packages:
+  - docker.io
+  - docker-compose-v2
+  - chrony        # reloj sincronizado: importa para registros, JWT y WAL (ISO 27001 8.17)
+  - fail2ban
+  - jq
+runcmd:
+  - systemctl enable --now docker chrony fail2ban
+  - usermod -aG docker azureuser
+  # SSH solo con llave (ISO 27001 5.17 / OWASP A07).
+  - sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+  - systemctl restart ssh

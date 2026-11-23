@@ -1,0 +1,21 @@
+# El entrypoint de la imagen de Nginx hace `source` de los archivos *.envsh, así que lo que se
+# exporta aquí lo ve la sustitución de plantillas que viene después (20-envsubst-on-templates.sh).
+# OJO: el entrypoint IGNORA el archivo si no tiene permiso de ejecución. Por eso va con el bit +x
+# en git y scripts/desplegar.sh lo reafirma (Windows no conserva permisos al copiar archivos).
+#
+# Elige el certificado: el real de Let's Encrypt si ya existe; si no, el autofirmado temporal que
+# prepara scripts/desplegar.sh. La primera vez que aparezca el certificado real hay que RECREAR el
+# proxy (`docker compose up -d --force-recreate proxy`), porque esta elección solo se hace al
+# arrancar. Las renovaciones posteriores conservan la ruta y basta `nginx -s reload`.
+#
+# También decide HSTS. Esa cabecera obliga al navegador a usar solo HTTPS durante un año y no admite
+# excepciones por certificado inválido: con el certificado autofirmado temporal dejaría el sitio
+# inaccesible hasta que venza, así que solo se activa cuando el certificado es el real.
+if [ -f "/etc/letsencrypt/live/${DOMINIO}/fullchain.pem" ]; then
+    export RUTA_CERT="/etc/letsencrypt/live/${DOMINIO}"
+    export HSTS_DIRECTIVA='add_header Strict-Transport-Security "max-age=31536000" always;'
+else
+    export RUTA_CERT="/etc/tls-temporal"
+    export HSTS_DIRECTIVA='# HSTS desactivado: el certificado actual es el autofirmado temporal.'
+fi
+echo "10-seleccionar-certificado: certificado de ${RUTA_CERT}"

@@ -1,0 +1,129 @@
+# Alertas del proyecto: disponibilidad, capacidad, replicación y seguridad (OWASP A09; ISO 27001 8.16).
+# Los umbrales son los del plan de capacidad (APF2, tabla 14) y se ajustan con las pruebas de carga.
+groups:
+  - name: disponibilidad
+    rules:
+      - alert: NodoCaido
+        expr: up{job="nodos"} == 0
+        for: 30s
+        labels: { severidad: critica }
+        annotations:
+          resumen: "El nodo {{ $labels.nodo }} no responde (node-exporter)"
+
+      - alert: BackendCaido
+        expr: up{job="backend"} == 0
+        for: 20s
+        labels: { severidad: critica }
+        annotations:
+          resumen: "El backend de {{ $labels.nodo }} no responde"
+
+      - alert: ServicioPublicoCaido
+        expr: probe_success{job="sonda-publica"} == 0
+        for: 30s
+        labels: { severidad: critica }
+        annotations:
+          resumen: "La URL pública no responde desde fuera (sonda externa)"
+
+      - alert: NodoFueraDelReparto
+        expr: probe_success{job="sonda-nodos"} == 0
+        for: 20s
+        labels: { severidad: alta }
+        annotations:
+          resumen: "El nodo {{ $labels.nodo }} no pasa el sondeo de salud /salud (sale del balanceador)"
+
+      - alert: CertificadoPorVencer
+        expr: (probe_ssl_earliest_cert_expiry{job="sonda-publica"} - time()) < 14 * 86400
+        for: 5m
+        labels: { severidad: alta }
+        annotations:
+          resumen: "El certificado TLS vence en menos de 14 días"
+
+  - name: capacidad
+    rules:
+      - alert: CpuAlta
+        expr: 100 - avg by (nodo) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100 > 85
+        for: 5m
+        labels: { severidad: media }
+        annotations:
+          resumen: "CPU de {{ $labels.nodo }} por encima del 85 % durante 5 min"
+
+      - alert: MemoriaAlta
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 85
+        for: 5m
+        labels: { severidad: media }
+        annotations:
+          resumen: "Memoria de {{ $labels.nodo }} por encima del 85 %"
+
+      - alert: DiscoLleno
+        expr: (1 - node_filesystem_avail_bytes{mountpoint="/",fstype!="rootfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="rootfs"}) * 100 > 85
+        for: 5m
+        labels: { severidad: media }
+        annotations:
+          resumen: "Disco de {{ $labels.nodo }} por encima del 85 %"
+
+      - alert: LatenciaP95Alta
+        expr: histogram_quantile(0.95, sum by (le, nodo) (rate(http_server_requests_seconds_bucket{job="backend"}[5m]))) > 1
+        for: 5m
+        labels: { severidad: media }
+        annotations:
+          resumen: "p95 de {{ $labels.nodo }} supera 1 s (el límite RNF03 es 2 s)"
+
+      - alert: ErroresServidorAltos
+        expr: sum by (nodo) (rate(http_server_requests_seconds_count{job="backend",status=~"5.."}[5m])) > 0.2
+        for: 3m
+        labels: { severidad: alta }
+        annotations:
+          resumen: "Errores 5xx sostenidos en {{ $labels.nodo }}"
+
+  - name: base-de-datos
+    rules:
+      - alert: PostgresCaido
+        expr: pg_up == 0
+        for: 20s
+        labels: { severidad: critica }
+        annotations:
+          resumen: "PostgreSQL de {{ $labels.nodo }} no responde"
+
+      - alert: ReplicaDesconectada
+        expr: pg_replication_is_replica == 1 and on(nodo) (pg_replication_lag_seconds > 30)
+        for: 1m
+        labels: { severidad: alta }
+        annotations:
+          resumen: "La réplica de {{ $labels.nodo }} lleva más de 30 s de retraso o está desconectada"
+
+      - alert: SinPrimaria
+        expr: sum(pg_replication_is_replica == bool 0) == 0
+        for: 30s
+        labels: { severidad: critica }
+        annotations:
+          resumen: "Ningún nodo es primaria de PostgreSQL (hay que promover la standby)"
+
+      - alert: DosPrimarias
+        expr: sum(pg_replication_is_replica == bool 0) > 1
+        for: 10s
+        labels: { severidad: critica }
+        annotations:
+          resumen: "Hay más de una primaria de PostgreSQL (split-brain): aislar el nodo viejo"
+
+      - alert: ConexionesBdAltas
+        expr: pg_stat_activity_count > 35
+        for: 3m
+        labels: { severidad: media }
+        annotations:
+          resumen: "Más de 35 conexiones a PostgreSQL en {{ $labels.nodo }} (máximo 50)"
+
+  - name: seguridad
+    rules:
+      - alert: PicoDeAutenticacionesFallidas
+        expr: sum(increase(http_server_requests_seconds_count{job="backend",status="401"}[5m])) > 20
+        for: 1m
+        labels: { severidad: media }
+        annotations:
+          resumen: "Más de 20 respuestas 401 en 5 min: posible fuerza bruta o credenciales caducadas"
+
+      - alert: PeticionesBloqueadasPorLimite
+        expr: sum(increase(http_server_requests_seconds_count{job="backend",status="429"}[5m])) > 10
+        for: 1m
+        labels: { severidad: media }
+        annotations:
+          resumen: "Respuestas 429 (límite de peticiones) por encima de lo normal"

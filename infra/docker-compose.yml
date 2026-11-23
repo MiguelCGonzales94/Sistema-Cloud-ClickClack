@@ -1,0 +1,71 @@
+# Compose de desarrollo local completo: base de datos, API y dos frontends.
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: clickclak-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: clickclak
+      POSTGRES_USER: clickclak
+      POSTGRES_PASSWORD: clickclak
+    ports:
+      # 5434 en el host: esta máquina tiene DOS instancias nativas de Postgres corriendo
+      # como servicios de Windows, ocupando 5432 y 5433. El contenedor sigue escuchando
+      # 5432 puertas adentro; solo cambia el puerto publicado en el host.
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clickclak -d clickclak"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+    container_name: clickclak-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/clickclak
+      DB_USER: clickclak
+      DB_PASSWORD: clickclak
+      JWT_SECRET: clickclak-desarrollo-clave-hmac-no-usar-en-produccion-cambiar-siempre
+      WEBAUTHN_RP_ID: localhost
+      WEBAUTHN_ORIGENES: http://localhost:5174,http://127.0.0.1:5174
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  frontend-admin:
+    build:
+      context: ../frontend-admin
+    container_name: clickclak-frontend-admin
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "5173:8080"
+
+  frontend-campo:
+    build:
+      context: ../frontend-campo
+    container_name: clickclak-frontend-campo
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "5174:8080"
+
+volumes:
+  postgres_data:

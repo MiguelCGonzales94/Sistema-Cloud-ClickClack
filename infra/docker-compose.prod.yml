@@ -1,0 +1,229 @@
+# Compose de PRODUCCIÓN (VM de Azure). A diferencia del compose de desarrollo:
+#  - solo el proxy publica puertos; backend y frontends quedan en redes internas de Docker (la
+#    base de datos solo se publica en la IP privada del nodo cuando existe infra/nodos/nodo1.yml);
+#  - redes SEGMENTADAS: `web` (proxy, frontends y backend) y `datos` (backend y PostgreSQL). Los
+#    frontends y el proxy no ven la base de datos (OWASP A05; ISO 27001 8.22);
+#  - no hay credenciales por defecto: todo secreto viene de infra/.env (ignorado por git);
+#  - cada servicio tiene un LÍMITE DE MEMORIA: un servicio que se desborda no puede tumbar la VM de
+#    4 GiB ni a los demás; los frontends y el backend corren sin privilegios y sin capacidades.
+#
+# Uso (en la VM, desde ~/clickclak/infra):  sh scripts/desplegar.sh
+name: clickclak
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    networks: [datos]
+    mem_limit: 640m
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      POSTGRES_DB: clickclak
+      POSTGRES_USER: clickclak
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en infra/.env}
+      # Contraseña del rol `replicador`; la aplica scripts/preparar-primaria.sh en cada despliegue.
+      REPLICA_PASSWORD: ${REPLICA_PASSWORD:?Falta REPLICA_PASSWORD en infra/.env}
+      # Contraseña del rol `monitoreo` (solo pg_monitor) que usa postgres_exporter.
+      METRICAS_CLAVE: ${METRICAS_CLAVE:-}
+      # Contraseña del rol `respaldo` (solo lectura) que usa pg_dump desde el testigo.
+      RESPALDO_CLAVE: ${RESPALDO_CLAVE:-}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - effective_cache_size=512MB
+      - -c
+      - max_connections=50
+      - -c
+      - work_mem=4MB
+      # Replicación en streaming. La réplica exige max_connections y max_wal_senders iguales o
+      # mayores que los de la primaria, así que ambos servicios usan los mismos valores.
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=5
+      - -c
+      - max_replication_slots=2
+      # Tope del WAL que la ranura retiene si la réplica está caída: sin él, una réplica parada
+      # llenaría el disco de la VM. Si se supera, la réplica se reconstruye (ver replicacion-postgres.md).
+      - -c
+      - max_slot_wal_keep_size=2GB
+      # Necesario para pg_rewind: permite reincorporar a la primaria vieja sin reconstruirla.
+      - -c
+      - wal_log_hints=on
+      # TLS entre nodos y hacia la aplicación (OWASP A02; ISO 27001 8.24). El certificado lo firma la CA
+      # interna y lleva la IP del nodo en el SAN; los clientes verifican la cadena y la IP (verify-full).
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/certs/server.crt
+      - -c
+      - ssl_key_file=/certs/server.key
+      - -c
+      - ssl_min_protocol_version=TLSv1.2
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/replicacion:/replicacion:ro
+      - /etc/clickclak/tls-bd:/certs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clickclak -d clickclak"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Réplica en caliente (hot standby): copia continua de la primaria por streaming. Acepta
+  # lecturas y rechaza escrituras. La aplicación NO se conecta a ella: existe para demostrar
+  # la replicación y poder promoverla si la primaria se pierde (ver Docs/tecnica/replicacion-postgres.md).
+  # Corre en la misma VM, así que no protege ante la caída de la VM.
+  postgres-replica:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    networks: [datos]
+    mem_limit: 384m
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: clickclak
+      POSTGRES_USER: clickclak
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en infra/.env}
+      REPLICA_PASSWORD: ${REPLICA_PASSWORD:?Falta REPLICA_PASSWORD en infra/.env}
+    entrypoint: ["sh", "/replicacion/entrada-replica.sh"]
+    command:
+      - -c
+      - hot_standby=on
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - effective_cache_size=256MB
+      - -c
+      - max_connections=50
+      - -c
+      - work_mem=4MB
+      - -c
+      - max_wal_senders=5
+      - -c
+      - max_replication_slots=2
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+      - ./postgres/replicacion:/replicacion:ro
+      - /etc/clickclak/tls-bd:/certs:ro
+    healthcheck:
+      # Sana = acepta conexiones Y está efectivamente en modo réplica.
+      test: ["CMD-SHELL", "pg_isready -U clickclak -d clickclak && psql -U clickclak -d clickclak -tAc 'SELECT pg_is_in_recovery()' | grep -q t"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  backend:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    # Está en las dos redes: recibe del proxy (web) y habla con la base (datos). Sin privilegios,
+    # sin capacidades de Linux y con límite de memoria (el heap de Java va acotado más abajo).
+    networks: [web, datos]
+    mem_limit: 900m
+    volumes:
+      # CA interna para verificar el certificado de PostgreSQL (sslmode=verify-full).
+      - /etc/clickclak/tls-bd/ca.crt:/certs/ca.crt:ro
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # DB_HOST solo se define en infra/.env tras promover la réplica (ver replicacion-postgres.md);
+      # por defecto la aplicación usa la primaria.
+      DB_URL: jdbc:postgresql://${DB_HOST:-postgres}:5432/clickclak
+      DB_USER: clickclak
+      DB_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en infra/.env}
+      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en infra/.env}
+      # Clave del usuario `prometheus` (HTTP Basic en /actuator/prometheus). Misma en todos los nodos.
+      METRICAS_CLAVE: ${METRICAS_CLAVE:-}
+      # Histograma de latencia de las peticiones HTTP: permite calcular el p95 (alerta y tablero).
+      MANAGEMENT_METRICS_DISTRIBUTION_PERCENTILESHISTOGRAM_HTTP_SERVER_REQUESTS: "true"
+      # WebAuthn exige el dominio efectivo (rp-id) y el origen exacto con esquema.
+      WEBAUTHN_RP_ID: ${DOMINIO:?Falta DOMINIO en infra/.env}
+      WEBAUTHN_ORIGENES: https://${DOMINIO}
+      # Heap acotado: el resto de la memoria es de Postgres, Nginx y el sistema.
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx640m -XX:+UseSerialGC
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 40s
+
+  # Los frontends son Nginx sin privilegios (puerto 8080, usuario 101) con HEALTHCHECK propio.
+  frontend-admin:
+    build:
+      context: ../frontend-admin
+    restart: unless-stopped
+    networks: [web]
+    mem_limit: 64m
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  frontend-campo:
+    build:
+      context: ../frontend-campo
+    restart: unless-stopped
+    networks: [web]
+    mem_limit: 64m
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Único punto de entrada público: termina TLS y reparte a los frontends y a la API.
+  #   443  -> app de campo (PWA)      8443 -> panel administrativo      80 -> redirección + desafío ACME
+  proxy:
+    build:
+      context: ./nginx
+    restart: unless-stopped
+    networks: [web]
+    mem_limit: 128m
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend-admin:
+        condition: service_healthy
+      frontend-campo:
+        condition: service_healthy
+    environment:
+      DOMINIO: ${DOMINIO:?Falta DOMINIO en infra/.env}
+      # Nombre de este nodo en la cabecera X-Nodo; lo fijan infra/nodos/nodo1.yml y nodo2.yml.
+      NODO: ${NODO:-nodo}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8443:8443"
+    volumes:
+      - ./nginx/plantillas:/etc/nginx/templates:ro
+      # Sin esto la imagen deja activa su página de bienvenida para cualquier Host "localhost".
+      - ./nginx/vacio.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/10-seleccionar-certificado.envsh:/docker-entrypoint.d/10-seleccionar-certificado.envsh:ro
+      # Certificado real de Let's Encrypt (lo gestiona certbot en el host) y, mientras no exista,
+      # uno autofirmado temporal para que el stack funcione desde el primer despliegue.
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /etc/clickclak/tls-temporal:/etc/tls-temporal:ro
+      - /var/www/certbot:/var/www/certbot:ro
+
+# Redes segmentadas. `datos` no es `internal: true` a propósito: en el nodo 1 PostgreSQL se publica en
+# la IP privada de la VM para que el nodo 2 replique, y una red interna no admite puertos publicados.
+networks:
+  web:
+  datos:
+
+volumes:
+  postgres_data:
+  postgres_replica_data:

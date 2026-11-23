@@ -1,0 +1,91 @@
+# Prometheus del testigo. Recolecta cada 10 s los dos nodos, el testigo y las sondas externas.
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+  external_labels:
+    proyecto: clickclak
+
+rule_files:
+  - /etc/prometheus/alertas.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # CPU, memoria, disco y red de cada VM.
+  - job_name: nodos
+    static_configs:
+      - targets: ["10.0.0.4:9100"]
+        labels: { nodo: nodo1 }
+      - targets: ["10.0.0.5:9100"]
+        labels: { nodo: nodo2 }
+      - targets: ["10.0.0.6:9100"]
+        labels: { nodo: testigo }
+
+  # Consumo por contenedor.
+  - job_name: contenedores
+    static_configs:
+      - targets: ["10.0.0.4:8081"]
+        labels: { nodo: nodo1 }
+      - targets: ["10.0.0.5:8081"]
+        labels: { nodo: nodo2 }
+
+  # Métricas del backend (Spring Actuator + Micrometer). HTTP Basic con el usuario `prometheus`.
+  - job_name: backend
+    metrics_path: /actuator/prometheus
+    basic_auth:
+      username: prometheus
+      password_file: /etc/prometheus/secretos/metricas_clave
+    static_configs:
+      - targets: ["10.0.0.4:8080"]
+        labels: { nodo: nodo1 }
+      - targets: ["10.0.0.5:8080"]
+        labels: { nodo: nodo2 }
+
+  # Estado de PostgreSQL y de la replicación en cada nodo.
+  - job_name: postgres
+    static_configs:
+      - targets: ["10.0.0.4:9187"]
+        labels: { nodo: nodo1 }
+      - targets: ["10.0.0.5:9187"]
+        labels: { nodo: nodo2 }
+
+  # Sonda EXTERNA de la URL pública: lo que ve un usuario, a través del balanceador, con el
+  # certificado validado (y su fecha de vencimiento).
+  - job_name: sonda-publica
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ["https://clickclak-utp.chilecentral.cloudapp.azure.com/salud"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
+
+  # Sonda directa a cada nodo por su IP privada (el certificado es del dominio, no de la IP).
+  - job_name: sonda-nodos
+    metrics_path: /probe
+    params:
+      module: [http_2xx_sin_verificar]
+    static_configs:
+      - targets: ["https://10.0.0.4/salud"]
+        labels: { nodo: nodo1 }
+      - targets: ["https://10.0.0.5/salud"]
+        labels: { nodo: nodo2 }
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
