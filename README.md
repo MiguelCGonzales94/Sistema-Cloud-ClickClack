@@ -22,7 +22,7 @@ Copia del código commiteado de `ClickClak/main` (commit `ebcc625`), sin `node_m
 
 ## Estado
 
-Decisión tomada: **3 servidores** (nodo 1, nodo 2 y un testigo de quórum/observabilidad/respaldos), con seguridad alineada a ISO/IEC 27001:2022 y OWASP Top 10. Aún no se ha creado nada en Azure.
+Decisión tomada: **3 servidores** (nodo 1, nodo 2 y un testigo de quórum/observabilidad/respaldos), con seguridad alineada a ISO/IEC 27001:2022 y OWASP Top 10. Ya está desplegado en Azure (Chile Central): balanceador, 2 nodos con replicación PostgreSQL, testigo con monitoreo, respaldos en Blob y TLS interno. Los servidores se apagan fuera de las ventanas de prueba, así que la URL pública puede no responder.
 
 | Documento | Contenido |
 |---|---|
