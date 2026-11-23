@@ -37,3 +37,7 @@ Decisión tomada: **3 servidores** (nodo 1, nodo 2 y un testigo de quórum/obser
 ## Pendiente de iniciar
 
 Este directorio aún no es un repositorio git. El entregable exige un repositorio **público**; falta decidir dónde crearlo.
+
+## Convención de commits
+
+Los mensajes se escriben **en español**, en presente y describiendo qué cambia y por qué (por ejemplo: `Agrega el guion de failover con aislamiento de la primaria`). Un commit por cambio coherente; nunca se versionan secretos ni claves.
