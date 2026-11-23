@@ -1,0 +1,20 @@
+{
+  "deteccion_s": 31.7,
+  "promocion_s": 2.8,
+  "rto_desde_caida_s (T0 -> primera escritura)": 35.3,
+  "rto_escritura_s (ultima ok -> primera ok)": 35.4,
+  "ventana_publica_no_200_s": 35.3,
+  "sondas_totales": 67,
+  "sondas_no_200": 16,
+  "escrituras_confirmadas": 202,
+  "escrituras_presentes_en_nueva_primaria": 202,
+  "rpo_escrituras_perdidas": 0,
+  "intentos_con_error_durante_la_caida": 249,
+  "nueva_linea_de_tiempo": "5",
+  "reincorporacion_s": 14.5,
+  "replicacion_final": "10.0.0.5/32/streaming/lag=0",
+  "nodos_que_atienden_tras_el_failover": {
+    "nodo1": 8,
+    "nodo2": 7
+  }
+}

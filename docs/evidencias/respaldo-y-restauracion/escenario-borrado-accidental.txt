@@ -1,0 +1,17 @@
+=== ESCENARIO: borrado accidental de una tabla (primaria = nodo 2, standby = nodo 1)
+[1] se crea una tabla de prueba con 1000 filas en la primaria
+SELECT 1000
+1000
+    la standby (nodo 1) la tiene: 1000
+[2] respaldo a Azure Blob (desde el testigo)
+{"blob":"respaldos/2026/11/23/clickclak-20261123T161919Z.dump","bytes":89155,"dump_s":1.349549109,"subida_s":.192054117,"total_s":1.541603226,"fecha":"20261123T161919Z"}
+[3] ERROR HUMANO: DROP TABLE en la primaria
+    primaria tiene la tabla: f
+    standby tiene la tabla:  f   <- la réplica COPIÓ el borrado: NO es un respaldo
+[4] restauración desde el respaldo en una base descartable
+Integridad verificada (SHA-256 coincide). Descarga: .094381355 s, 89155 bytes.
+Restauración terminada en 1.802040809 s.
+1d0
+< _prueba_drp=1000
+Tablas comparadas: 15 | conteos restaurada vs producción: DIFERENTES | PostGIS: 3.4.3
+{"blob":"2026/11/23/clickclak-20261123T161919Z.dump","descarga_s":.094381355,"restauracion_s":1.802040809,"total_s":9.409420018,"tablas":15,"conteos":"DIFERENTES","postgis":"3.4.3"}

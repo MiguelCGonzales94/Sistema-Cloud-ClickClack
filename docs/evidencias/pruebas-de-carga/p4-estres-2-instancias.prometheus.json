@@ -1,0 +1,9 @@
+{
+"prueba":"p4-estres","etiqueta":"2-instancias","objetivos":"http://10.0.0.4:8080,http://10.0.0.5:8080","duracion_s":246,
+"cpu_max_pct":{"nodo2":80.98,"nodo1":44.9,"testigo":23.8},
+"memoria_max_pct":{"nodo1":32.81,"testigo":24.82,"nodo2":35.78},
+"p95_backend_max_s":{"nodo2":0.08,"nodo1":0.08},
+"hikari_activas_max":{"nodo1":5,"nodo2":4},
+"hikari_pendientes_max":{"nodo1":0,"nodo2":0},
+"conexiones_bd_max":{"nodo1":2,"nodo2":23}
+}

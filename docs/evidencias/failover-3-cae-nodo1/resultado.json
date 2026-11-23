@@ -1,0 +1,20 @@
+{
+  "deteccion_s": 32.7,
+  "promocion_s": 2.7,
+  "rto_desde_caida_s (T0 -> primera escritura)": 35.7,
+  "rto_escritura_s (ultima ok -> primera ok)": 35.8,
+  "ventana_publica_no_200_s": 38.0,
+  "sondas_totales": 71,
+  "sondas_no_200": 18,
+  "escrituras_confirmadas": 214,
+  "escrituras_presentes_en_nueva_primaria": 214,
+  "rpo_escrituras_perdidas": 0,
+  "intentos_con_error_durante_la_caida": 256,
+  "nueva_linea_de_tiempo": "4",
+  "reincorporacion_s": 12.3,
+  "replicacion_final": "10.0.0.4/32/streaming/lag=0 (nodo 2 -> nodo 1)",
+  "nodos_que_atienden_tras_el_failover": {
+    "nodo2": 16
+  },
+  "reincorporacion_metodo": "pg_rewind (ejecutado a mano tras corregir finales de línea CRLF del script); copió 54 MB de 109 MB; divergencia en 0/C03BB80, línea de tiempo 3"
+}

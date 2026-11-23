@@ -1,0 +1,9 @@
+{
+"prueba":"p2-pico","etiqueta":"2-instancias","objetivos":"http://10.0.0.4:8080,http://10.0.0.5:8080","duracion_s":202,
+"cpu_max_pct":{"nodo1":17.43,"testigo":5.02,"nodo2":14.35},
+"memoria_max_pct":{"nodo2":33.07,"nodo1":32.28,"testigo":23.36},
+"p95_backend_max_s":{"nodo2":0.11,"nodo1":0.08},
+"hikari_activas_max":{"nodo1":1,"nodo2":0},
+"hikari_pendientes_max":{"nodo1":0,"nodo2":0},
+"conexiones_bd_max":{"nodo1":2,"nodo2":22}
+}

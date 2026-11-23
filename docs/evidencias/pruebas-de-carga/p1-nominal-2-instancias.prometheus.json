@@ -1,0 +1,9 @@
+{
+"prueba":"p1-nominal","etiqueta":"2-instancias","objetivos":"http://10.0.0.4:8080,http://10.0.0.5:8080","duracion_s":183,
+"cpu_max_pct":{"nodo2":7.78,"nodo1":14.47,"testigo":6.43},
+"memoria_max_pct":{"nodo2":33.08,"nodo1":31.64,"testigo":23.56},
+"p95_backend_max_s":{"nodo1":0.16,"nodo2":0.01},
+"hikari_activas_max":{"nodo1":1,"nodo2":0},
+"hikari_pendientes_max":{"nodo1":0,"nodo2":0},
+"conexiones_bd_max":{"nodo1":2,"nodo2":22}
+}

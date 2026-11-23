@@ -1,0 +1,9 @@
+{
+"prueba":"p3-rafaga","etiqueta":"2-instancias","objetivos":"http://10.0.0.4:8080,http://10.0.0.5:8080","duracion_s":61,
+"cpu_max_pct":{"nodo1":7.58,"testigo":4.93,"nodo2":8.98},
+"memoria_max_pct":{"nodo1":33.02,"testigo":22.79,"nodo2":35.5},
+"p95_backend_max_s":{"nodo1":0.08,"nodo2":0.08},
+"hikari_activas_max":{"nodo1":0,"nodo2":0},
+"hikari_pendientes_max":{"nodo1":0,"nodo2":0},
+"conexiones_bd_max":{"nodo1":2,"nodo2":22}
+}

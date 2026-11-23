@@ -1,0 +1,20 @@
+{
+  "deteccion_s": 26.8,
+  "promocion_s": 2.6,
+  "rto_desde_caida_s (T0 -> primera escritura)": 30.0,
+  "rto_escritura_s (ultima ok -> primera ok)": 30.0,
+  "ventana_publica_no_200_s": 26.3,
+  "sondas_totales": 64,
+  "sondas_no_200": 13,
+  "escrituras_confirmadas": 178,
+  "escrituras_presentes_en_nueva_primaria": 178,
+  "rpo_escrituras_perdidas": 0,
+  "intentos_con_error_durante_la_caida": 214,
+  "nueva_linea_de_tiempo": "2",
+  "reincorporacion_s": 9.7,
+  "replicacion_final": "10.0.0.4/32/streaming/lag=0",
+  "nodos_que_atienden_tras_el_failover": {
+    "nodo2": 7
+  },
+  "reincorporacion_metodo": "reconstrucción completa (pg_rewind falló: wal_log_hints sin checkpoint en el archivo de control)"
+}

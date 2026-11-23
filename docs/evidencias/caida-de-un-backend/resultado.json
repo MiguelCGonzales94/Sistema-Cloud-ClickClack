@@ -1,0 +1,14 @@
+{
+  "nodo_caido": "nodo1",
+  "sondas_totales": 191,
+  "sondas_no_200": 5,
+  "porcentaje_exito": 97.38,
+  "el_balanceador_dejo_de_usar_al_nodo_tras_s": 11.4,
+  "peticiones_fallidas_durante_la_caida": 4,
+  "nodos_que_respondieron_durante_la_caida": {
+    "nodo1": 4,
+    "nodo2": 51
+  },
+  "el_nodo_vuelve_al_reparto_tras_s": 17.3,
+  "nota": "Recalculado a partir de sonda.log (T0 aproximado por el primer fallo, ±2 s). El script original mezclaba respuestas posteriores a la recuperación."
+}
