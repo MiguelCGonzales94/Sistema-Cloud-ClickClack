@@ -34,9 +34,9 @@ Decisión tomada: **3 servidores** (nodo 1, nodo 2 y un testigo de quórum/obser
 | [`docs/COSTOS_Y_FAILOVER.md`](docs/COSTOS_Y_FAILOVER.md) | Costos, replicación y failover |
 | [`docs/SEGURIDAD_ISO27001_OWASP.md`](docs/SEGURIDAD_ISO27001_OWASP.md) | Controles ISO 27001 y OWASP Top 10 |
 
-## Pendiente de iniciar
+## Repositorio
 
-Este directorio aún no es un repositorio git. El entregable exige un repositorio **público**; falta decidir dónde crearlo.
+Público en GitHub: <https://github.com/MiguelCGonzales94/Sistema-Cloud-ClickClack>. La rama `main` es la versión de trabajo.
 
 ## Convención de commits
 
