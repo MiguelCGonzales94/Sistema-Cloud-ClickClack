@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+# El backend solo recibe tráfico del proxy, que sustituye estos encabezados con los valores
+# públicos reales. Aplicarlos permite que Spring reconozca 443 y 8443 como peticiones del mismo
+# origen en vez de comparar el HTTPS del navegador con el HTTP interno entre contenedores.
+server:
+  forward-headers-strategy: framework
+
+clickclak:
+  seguridad:
+    jwt:
+      secret: ${JWT_SECRET}
+    cors:
+      # Vacío por defecto: el proxy sirve frontends y API bajo el mismo origen, así que no se
+      # autoriza ningún origen externo. Solo se rellena si algún día hay un cliente en otro dominio.
+      origenes: ${CORS_ORIGENES:}
