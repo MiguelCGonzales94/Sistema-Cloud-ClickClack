@@ -38,6 +38,8 @@ Cada bloque tiene una **puerta** (qué debe ser verdad para darlo por cerrado). 
 | A6 | Protección de `main` + PR | Reglas |
 | A7 | README raíz de **reproducción desde cero** (prerrequisitos, orden de despliegue, cómo ver el tablero) + licencia | Entregable 2 |
 
+**Avance (2026-11-23):** A1 y A2 **hechos**: repo público <https://github.com/MiguelCGonzales94/Sistema-Cloud-ClickClack>, 8 commits en español sin atribución a herramientas, correo `noreply` de GitHub. En A1 se quitaron los tokens JWT de las evidencias de k6 y se excluyó `.cuenta-respaldos`; búsqueda manual de secretos limpia (no se usó `gitleaks`: no está instalado). A3 **parcial**: los 4 workflows heredados corrieron en verde sobre el primer commit (incluye las 329 pruebas), pero siguen sin adaptarse (comentarios apuntan a `Docs/tecnica/pipeline-ci.md`, que no existe aquí). Siguen **pendientes** A4 a A7.
+
 **Puerta:** repo público sin secretos; CI en verde; README seguible por un tercero.
 **Corte posible:** A5 y A6.
 
