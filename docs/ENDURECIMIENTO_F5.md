@@ -8,7 +8,7 @@ Fecha: 2026-11-23 · Marco: OWASP Top 10 (2021) e ISO/IEC 27001:2022 · Compleme
 |---|---|---|---|
 | Tráfico aplicación → base de datos | Sin cifrar (SCRAM por red privada) | **TLS 1.3 con `verify-full`** (cadena e IP del certificado) | A02 · 8.24 |
 | Replicación primaria → standby | Sin cifrar | **TLS 1.3 verificado**; `pg_hba` **rechaza** lo que llegue sin cifrar por la red entre nodos | A02 · 8.24 |
-| Vulnerabilidades HIGH/CRITICAL de las imágenes | Backend 51, frontends 68, proxy 70 | Backend **7**, frontends **0**, proxy **0** | A06 · 8.8 |
+| Vulnerabilidades HIGH/CRITICAL de las imágenes | Backend 51, frontends 68, proxy 70 | Backend **4** (aceptados por escrito), frontends **0**, proxy **0**, **verificado en cada cambio por el CI** | A06 · 8.8 |
 | SSH a los nodos | Abierto a cualquier IP (solo llave) | Restringido a la IP del equipo (NSG) | A05 · 6.7 |
 | Prueba de humo del despliegue | 52 comprobaciones, replicación local | **66–69 comprobaciones**, replicación entre nodos y TLS | 8.29 |
 
@@ -46,7 +46,7 @@ Escaneo con **Trivy 0.57** de las imágenes en los nodos (solo HIGH y CRITICAL).
 
 | Imagen | Antes | Después | Qué se hizo |
 |---|---|---|---|
-| `clickclak-backend` | 51 (11 críticas) | **7** (2 críticas) | Spring Boot **3.3.4 → 3.5.14** y parches de Tomcat (10.1.30→10.1.59), Jackson (2.17.2→2.21.7), Spring Framework (6.1.13→6.2.19), JDBC de PostgreSQL (42.7.4→42.7.12) y Micrometer |
+| `clickclak-backend` | 51 (11 críticas) | **4** (2 críticas) | Spring Boot **3.3.4 → 3.5.14** y parches de Tomcat (10.1.30→10.1.59), Jackson (2.17.2→2.21.7), Spring Framework (6.1.13→6.2.19), JDBC de PostgreSQL (42.7.4→42.7.12) y Micrometer |
 | `clickclak-frontend-admin` / `campo` | 68 (3 críticas) | **0** | `apk upgrade` sobre la imagen `nginx-unprivileged` (se vuelve al usuario 101) |
 | Proxy (`nginx:1.27-alpine`) | 70 (3 críticas) | **0** | Imagen construida con su propio `Dockerfile` y `apk upgrade` |
 | `postgis/postgis:16-3.4` | 391 (29 críticas) | **sin cambios** | **Riesgo aceptado** (ver abajo) |
@@ -54,9 +54,9 @@ Escaneo con **Trivy 0.57** de las imágenes en los nodos (solo HIGH y CRITICAL).
 **Cómo se hizo:** la actualización de Spring Boot es un salto de dos versiones menores y se hizo con red de seguridad: copia del `pom`, **329 pruebas** como criterio de aceptación (todas en verde, sin cambiar código), despliegue en rotación y rescaneo. Los parches se fijan como propiedades del `pom`.
 
 **Lo que queda (y por qué):**
-- **Backend, 7 hallazgos:** `spring-webmvc` (2 críticas, corrección solo en Spring Framework 7, salto de versión mayor); `guava`, `httpcore5` (dependencias transitivas de la librería WebAuthn, sin corrección compatible en su línea) y `spring-data-commons` (corrección de parche disponible, no aplicada).
+- **Backend, 4 hallazgos** (eran 7: el CI cerró `spring-data-commons` con el BOM 2025.0.13 y `guava` fijada en 33.7.2, con las 329 pruebas en verde). Quedan `spring-webmvc` (2 críticas; la corrección solo existe en Spring Framework 7, salto de versión mayor) y `httpcore5` / `httpcore5-h2` (transitivas de la librería WebAuthn; subirlas podría romper la compatibilidad y no se probó). Se aceptan en `.trivyignore.yaml` **con motivo y caducidad 2026-12-31**; los motivos se comprobaron buscando en el código (sin vistas XSLT, sin SSE ni WebFlux, cliente HTTP propio del JDK), no con un análisis de alcance completo.
 - **`postgis`: 238 de 391 sin corrección disponible** (base Debian); el contenedor **no está expuesto a Internet** (solo red privada), exige **TLS** y SCRAM, y se acota con NSG y `pg_hba`. Se declara como riesgo aceptado; la mitigación de fondo es migrar a una versión más nueva de la imagen y reescanear.
-- El escaneo es **manual**: aún no está integrado en un pipeline de CI que lo ejecute en cada cambio (no existe repositorio remoto todavía).
+- **Escaneo en CI** (`.github/workflows/seguridad.yml`): en cada push, pull request y cada lunes. Escanea dependencias y secretos del repositorio y construye y escanea las 4 imágenes (backend, 2 frontends, proxy); falla con HIGH o CRITICAL no aceptados. Trivy corre desde su **imagen oficial 0.57.1 fijada por digest**, no con `aquasecurity/trivy-action`: en marzo de 2026 se comprometieron casi todas las etiquetas de esa acción y se publicó un binario malicioso (v0.69.4; [aviso](https://github.com/aquasecurity/trivy/security/advisories/GHSA-69fq-xp46-6x23)). `postgis` no se escanea en el CI (es una imagen ajena, riesgo aceptado). Los Dockerfile y compose se revisan en modo informativo, sin fallar.
 
 ## 4. Acceso SSH (A05 / ISO 6.7)
 
@@ -83,5 +83,5 @@ El script `infra/scripts/verificar-despliegue.sh` ahora reconoce el diseño de d
 
 - **Segundo factor** para supervisores y RR. HH. (pendiente del APF2; se declarará como riesgo aceptado si no hay tiempo).
 - **Rol de base de datos de ejecución sin DDL** (hoy la aplicación entra como propietario).
-- **Escaneo en CI** y **prueba ofensiva básica** independiente.
+- **Prueba ofensiva básica** independiente. (El escaneo en CI ya está hecho.)
 - Renovación de certificados internos y gestión de secretos con Key Vault.

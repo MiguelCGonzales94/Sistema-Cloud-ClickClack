@@ -35,7 +35,7 @@ Topología base: 3 servidores — nodo 1 y nodo 2 idénticos (aplicación y base
 | R6 | Acceso SSH abierto a cualquier IP (riesgo del APF2) | NSG: 22 solo desde la IP del equipo; llave sin contraseña; `fail2ban` | **Implementado** (solo la IP del equipo; los demás integrantes deben añadir la suya) |
 | R7 | Estado en memoria del backend impide varias instancias (y revocar tokens de forma consistente) | Mover tokens revocados, intentos fallidos y desafíos WebAuthn a PostgreSQL | Nuevo |
 | R8 | Restauración nunca probada | Prueba periódica de restauración con RTO/RPO medidos | **Implementado** (prueba semanal en cron; medida: 9,4 s) |
-| R9 | Cadena de suministro: imágenes y dependencias | Imágenes fijadas por versión y digest, Trivy y análisis de dependencias en el CI | **Parcial**: Trivy manual hecho (backend 51→7, frontends y proxy 0); falta CI y fijar por digest |
+| R9 | Cadena de suministro: imágenes y dependencias | Imágenes fijadas por versión y digest, Trivy y análisis de dependencias en el CI | **Parcial**: Trivy en CI en cada cambio y semanalmente (backend 51→4 aceptados con caducidad, frontends y proxy 0); falta fijar por digest las imágenes base de los Dockerfile |
 | R10 | Bitácoras sin alertas de seguridad (A09 parcial en el APF2) | Alertmanager en el testigo: 401/429 repetidos, cuentas bloqueadas, accesos fallidos a la BD | Nuevo |
 
 ## 4. Declaración de aplicabilidad resumida (ISO/IEC 27001:2022, Anexo A)
