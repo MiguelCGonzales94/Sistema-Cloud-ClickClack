@@ -27,6 +27,7 @@ Decisión tomada: **3 servidores** (nodo 1, nodo 2 y un testigo de quórum/obser
 | Documento | Contenido |
 |---|---|
 | [`docs/PLAN_DE_TRABAJO.md`](docs/PLAN_DE_TRABAJO.md) | **Plan por fases F0–F8 hasta el cierre** |
+| [`docs/diagramas/`](docs/diagramas/) | Diagramas físico, lógico, de failover y de red (`.drawio` y `.png`) |
 | [`docs/PLAN_DE_CIERRE.md`](docs/PLAN_DE_CIERRE.md) | **Plan de cierre**: lo que queda desde F5 hasta la sustentación, por bloques y días |
 | [`docs/ANALISIS_BRECHAS.md`](docs/ANALISIS_BRECHAS.md) | Qué falta frente a la rúbrica |
 | [`docs/DECISION_TOPOLOGIA.md`](docs/DECISION_TOPOLOGIA.md) | Por qué 3 servidores, stack y etapas |

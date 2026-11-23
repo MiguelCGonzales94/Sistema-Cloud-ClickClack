@@ -65,6 +65,8 @@ Cada bloque tiene una **puerta** (qué debe ser verdad para darlo por cerrado). 
 | C3 | **Secuencia de failover** | Caída de la primaria → fencing → promoción → reincorporación, con los tiempos medidos |
 | C4 | **Red y puertos** | Quién habla con quién y por dónde (TLS interno) |
 
+**Avance (2026-11-23):** los 4 diagramas están hechos en `docs/diagramas/` (fuente `.drawio` editable y `.png` exportado): `01-fisico-azure`, `02-logico-contenedores`, `03-secuencia-failover` y `04-red-y-puertos`. Se contrastaron con `ARQUITECTURA_OBJETIVO.md`, `DRP_Y_FAILOVER.md` y los archivos de `infra/` (puertos de exportadores, redes Docker y rol de cada nodo). Los íconos de Azure no se usaron: son figuras genéricas.
+
 Formato: draw.io (editable) + PNG exportado en `docs/diagramas/`. **Puerta:** los 4 diagramas coinciden con el estado real (IPs, puertos y roles de `ARQUITECTURA_OBJETIVO.md` §5).
 
 ### Bloque D — Informe técnico PDF por fases (≈16 h) · sin nube
