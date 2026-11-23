@@ -1,0 +1,90 @@
+# Seguridad de la cadena de suministro (OWASP A06 y A08; ISO/IEC 27001:2022 8.8).
+#   - codigo:   Trivy sobre el repositorio (dependencias de Maven y npm, secretos).
+#   - imagenes: construye cada imagen del proyecto y la escanea. Falla con vulnerabilidades HIGH o CRITICAL.
+# Corre en cada cambio, en cada pull request y los lunes (aparecen vulnerabilidades nuevas sin cambiar código).
+#
+# Trivy se ejecuta desde su imagen OFICIAL fijada por digest, NO con la acción aquasecurity/trivy-action:
+# en marzo de 2026 se comprometieron casi todas las etiquetas de esa acción y se publicó un binario
+# malicioso (v0.69.4). Una imagen fijada por hash no puede ser reemplazada por una etiqueta movida.
+# 0.57.1 es anterior al incidente. Para subir la versión: verificar el digest en el aviso oficial
+# (GHSA-69fq-xp46-6x23) y cambiarlo aquí.
+name: seguridad
+
+on:
+  pull_request:
+  push:
+    branches: [main, "ci/**"]
+  schedule:
+    - cron: "0 12 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seguridad-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: true
+
+env:
+  TRIVY: aquasec/trivy:0.57.1@sha256:5c59e08f980b5d4d503329773480fcea2c9bdad7e381d846fbf9f2ecb8050f6b
+
+jobs:
+  codigo:
+    name: Dependencias y secretos del repositorio
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Caché de la base de vulnerabilidades
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ github.run_id }}
+          restore-keys: trivy-db-
+
+      - name: Vulnerabilidades y secretos (falla con HIGH o CRITICAL)
+        run: |
+          mkdir -p "$HOME/.cache/trivy"
+          docker run --rm -v "$PWD":/src:ro -v "$HOME/.cache/trivy":/root/.cache/trivy "$TRIVY" \
+            fs --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 \
+            --ignorefile /src/.trivyignore --skip-dirs /src/docs/evidencias /src
+
+      # Informativo: no falla. Lista malas configuraciones en Dockerfile y compose para revisarlas.
+      - name: Configuración de Dockerfile y compose (informativo)
+        run: |
+          docker run --rm -v "$PWD":/src:ro -v "$HOME/.cache/trivy":/root/.cache/trivy "$TRIVY" \
+            config --severity HIGH,CRITICAL --exit-code 0 /src
+
+  imagenes:
+    name: Imagen ${{ matrix.nombre }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { nombre: backend, contexto: backend }
+          - { nombre: frontend-admin, contexto: frontend-admin }
+          - { nombre: frontend-campo, contexto: frontend-campo }
+          - { nombre: proxy, contexto: infra/nginx }
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Caché de la base de vulnerabilidades
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ github.run_id }}
+          restore-keys: trivy-db-
+
+      - name: Construir la imagen
+        run: docker build -t "clickclak-${{ matrix.nombre }}:ci" "${{ matrix.contexto }}"
+
+      - name: Escanear la imagen (falla con HIGH o CRITICAL)
+        run: |
+          mkdir -p "$HOME/.cache/trivy"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/.trivyignore":/.trivyignore:ro -v "$HOME/.cache/trivy":/root/.cache/trivy "$TRIVY" \
+            image --severity HIGH,CRITICAL --exit-code 1 --ignorefile /.trivyignore \
+            "clickclak-${{ matrix.nombre }}:ci"
