@@ -1,5 +1,5 @@
-# CI de la aplicación de campo, PWA (CLICKCLACK-9): compila, prueba y audita las dependencias de producción.
-# Solo corre cuando cambia frontend-campo/ (ver Docs/tecnica/pipeline-ci.md).
+# CI de la aplicación de campo, PWA: compila, prueba y audita las dependencias de producción.
+# Solo corre cuando cambia frontend-campo/ (ver docs/PLAN_DE_CIERRE.md, bloque A).
 name: frontend-campo
 
 on:

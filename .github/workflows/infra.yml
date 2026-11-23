@@ -1,5 +1,5 @@
-# CI de la infraestructura (CLICKCLACK-9): valida la sintaxis de los scripts y de los compose.
-# No despliega nada. Solo corre cuando cambia infra/ (ver Docs/tecnica/pipeline-ci.md).
+# CI de la infraestructura: valida la sintaxis de los scripts y de los compose.
+# No despliega nada. Solo corre cuando cambia infra/ (ver docs/PLAN_DE_CIERRE.md, bloque A).
 name: infra
 
 on:

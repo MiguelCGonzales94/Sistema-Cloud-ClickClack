@@ -1,5 +1,5 @@
-# CI del backend (CLICKCLACK-9): compila y ejecuta toda la suite contra un Postgres con PostGIS real.
-# Solo corre cuando cambia backend/ (ver Docs/tecnica/pipeline-ci.md).
+# CI del backend: compila y ejecuta toda la suite contra un Postgres con PostGIS real.
+# Solo corre cuando cambia backend/ (ver docs/PLAN_DE_CIERRE.md, bloque A).
 name: backend
 
 on:
