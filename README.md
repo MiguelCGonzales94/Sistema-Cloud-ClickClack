@@ -1,10 +1,6 @@
 # ClickClak Cloud
 
-Proyecto final del curso **Servicios Cloud (100000S91T)**, UTP, sección 43639. Migración, contenedorización y despliegue en la nube de **ClickClak**, el sistema de control de asistencia y gestión de incidencias desarrollado para el curso Integrador II.
-
-## Origen del código
-
-Copia del código commiteado de `ClickClak/main` (commit `ebcc625`), sin `node_modules`, `target` ni documentación del otro curso. El repositorio original no se modifica.
+Proyecto final del curso **Servicios Cloud (100000S91T)**, UTP, sección 43639. Arquitectura en la nube **altamente disponible, resiliente y escalable** para **ClickClak**, un sistema de control de asistencia y gestión de incidencias para personal de campo, desplegada en Azure.
 
 ## Estructura
 

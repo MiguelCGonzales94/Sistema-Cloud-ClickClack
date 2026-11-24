@@ -1,19 +1,19 @@
-# 7. Matriz de la rúbrica y anexos
+# ANEXOS
 
-## 7.1 Evidencia por criterio de la rúbrica
+## Anexo A. Matriz de cumplimiento de la guía y la rúbrica
 
 Para cada criterio se indica dónde está la evidencia, lo que respalda el nivel más alto y **lo que un evaluador podría objetar**. No se asigna una nota: la decide quien evalúa.
 
 @tabla Criterios de la rúbrica y evidencia
 | Criterio | Evidencia | Lo que respalda un nivel alto | Lo que se podría objetar |
 |---|---|---|---|
-| **1. Análisis y arquitectura base** (Unidad 1) | Capítulo 1; tablas de línea base, demanda, tráfico, modelos de despliegue y almacenamiento | Sistema descrito con su punto de partida medido; justificación IaaS frente a PaaS y de PostgreSQL, Blob y discos; topologías comparadas con costos | La opción PaaS se compara de forma cualitativa (no se verificó su precio ni disponibilidad en la región); el tráfico de red es una estimación con supuestos, no una medición |
-| **2. Contenedorización y orquestación** (Unidad 2) | Capítulo 2; Dockerfiles; `docker-compose.prod.yml` y `infra/nodos/`; prueba de humo 69/0 y 66/0 | Imágenes en dos etapas, sin privilegios, con comprobación de salud y límites; entorno orquestado con Compose, dos redes y dependencias de salud, sin errores | Se usa Compose y no Kubernetes (decisión razonada, pero distinta de lo que sugiere la guía); las imágenes de los frontends crecieron respecto al curso anterior |
-| **3. Infraestructura, monitoreo y escalabilidad** (Unidad 2) | Capítulos 2 y 3; diagramas físico y de red; 17 alertas y tablero de 21 paneles; pruebas de carga P1 a P5 | Red virtual con balanceador, NSG y una sola IP pública; métricas con alertas; escalabilidad **demostrada** de 1 a 2 instancias (p95 −73 %) y política escrita | **No hay escalado automático** ni se probó el escalado vertical; los logs no están centralizados; la red y los nodos no tienen script de infraestructura como código; no se midieron los créditos de CPU |
-| **4. Resiliencia y patrones de diseño** (Unidad 3) | Capítulo 4; patrones con su archivo; failover (3 ensayos más uno con TLS); respaldos; DRP | Failover real con RTO de 30–36 s y RPO 0 medidos, *fencing*, reincorporación con `pg_rewind`, respaldos con restauración verificada, patrones con evidencia | El failover es **manual**, la replicación es asíncrona y el testigo no vota; faltan Circuit Breaker y cola del lado servidor; sin zonas de disponibilidad ni segunda región |
+| **1. Análisis y arquitectura base** (Unidad 1) | Capítulos I y II; problemática, consumo medido, demanda, tráfico, modelos de despliegue y almacenamiento | Problemática y situación inicial documentadas; sistema descrito con su consumo medido; justificación IaaS frente a PaaS y de PostgreSQL, Blob y discos; topologías comparadas con costos | La opción PaaS se compara de forma cualitativa (no se verificó su precio ni disponibilidad en la región); el tráfico de red es una estimación con supuestos, no una medición |
+| **2. Contenedorización y orquestación** (Unidad 2) | Capítulo III; Dockerfiles; `docker-compose.prod.yml` y `infra/nodos/`; prueba de humo 69/0 y 66/0 | Imágenes en dos etapas, sin privilegios, con comprobación de salud y límites; entorno orquestado con Compose, dos redes y dependencias de salud, sin errores | Se usa Compose y no Kubernetes (decisión razonada, pero distinta de lo que sugiere la guía); las imágenes de los frontends y del proxy pesan unos 21 MB más que su base por la capa de actualización de seguridad |
+| **3. Infraestructura, monitoreo y escalabilidad** (Unidad 2) | Capítulos III y IV; diagramas físico y de red; 17 alertas y tablero de 21 paneles; pruebas de carga P1 a P5 | Red virtual con balanceador, NSG y una sola IP pública; métricas con alertas; escalabilidad **demostrada** de 1 a 2 instancias (p95 −73 %) y política escrita | **No hay escalado automático** ni se probó el escalado vertical; los logs no están centralizados; la red y los nodos no tienen script de infraestructura como código; no se midieron los créditos de CPU |
+| **4. Resiliencia y patrones de diseño** (Unidad 3) | Capítulo V; patrones con su archivo; failover (3 ensayos más uno con TLS); respaldos; DRP | Failover real con RTO de 30–36 s y RPO 0 medidos, *fencing*, reincorporación con `pg_rewind`, respaldos con restauración verificada, patrones con evidencia | El failover es **manual**, la replicación es asíncrona y el testigo no vota; faltan Circuit Breaker y cola del lado servidor; sin zonas de disponibilidad ni segunda región |
 | **5. Sustentación y demostración** (semanas 17–18) | Tres guiones de falla en `infra/failover/` y `infra/respaldos/`; tablero de Grafana | El sistema corre en la nube y las tres fallas están ensayadas y cronometradas | **Pendiente de realizar:** el ensayo completo y el plan B de la sustentación se preparan después de este informe |
 
-## 7.2 Qué demuestra la sustentación en vivo
+## Anexo B. Qué demuestra la sustentación en vivo
 
 Se ejecutarán tres fallas con el tablero de Grafana abierto, para ver la caída y la recuperación en tiempo real:
 
@@ -23,7 +23,7 @@ Se ejecutarán tres fallas con el tablero de Grafana abierto, para ver la caída
 
 Antes de empezar: ambos nodos sanos, la replicación en `streaming` y los servidores encendidos en orden, **primero el que aloja la primaria**.
 
-## Anexo A. Estructura del repositorio
+## Anexo C. Estructura del repositorio
 
 Repositorio público: <https://github.com/MiguelCGonzales94/Sistema-Cloud-ClickClack>
 
@@ -44,7 +44,7 @@ Repositorio público: <https://github.com/MiguelCGonzales94/Sistema-Cloud-ClickC
 | `.github/workflows/` | Integración continua: pruebas, auditoría y Trivy |
 | `docs/` | Documentación técnica, diagramas y evidencias |
 
-## Anexo B. Evidencias
+## Anexo D. Evidencias
 
 @tabla Evidencias y dónde están
 | Evidencia | Ubicación |
@@ -56,6 +56,6 @@ Repositorio público: <https://github.com/MiguelCGonzales94/Sistema-Cloud-ClickC
 | Diagramas (editables y en imagen) | `docs/diagramas/` |
 | Escaneos de Trivy y excepciones | `.github/workflows/seguridad.yml`, `.trivyignore.yaml` |
 
-## Anexo C. Documentos de apoyo del repositorio
+## Anexo E. Documentos de apoyo del repositorio
 
 `docs/ARQUITECTURA_OBJETIVO.md` (diseño y validaciones en Azure), `docs/DECISION_TOPOLOGIA.md` (por qué tres servidores), `docs/COSTOS_Y_FAILOVER.md` (costos y semántica de la replicación), `docs/DRP_Y_FAILOVER.md` (ensayos y procedimiento), `docs/PRUEBAS_DE_CARGA.md`, `docs/ENDURECIMIENTO_F5.md` y `docs/SEGURIDAD_ISO27001_OWASP.md`.

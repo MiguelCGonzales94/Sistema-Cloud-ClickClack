@@ -1,0 +1,18 @@
+{
+  "facultad": "Facultad de Ingeniería",
+  "carrera": "Carrera de Ingeniería de Sistemas e Informática",
+  "curso": "CURSO SERVICIOS CLOUD",
+  "titulo": "Sistema Cloud ClickClack",
+  "subtitulo": "Arquitectura en la nube altamente disponible, resiliente y escalable para un sistema de control de asistencia",
+  "entrega": "PROYECTO FINAL",
+  "lugar": "Lima, Perú",
+  "fecha": "Noviembre de 2026",
+  "repositorio": "https://github.com/MiguelCGonzales94/Sistema-Cloud-ClickClack",
+  "autores": [
+    "Apellidos, Nombres – Código (integrante 1)",
+    "Apellidos, Nombres – Código (integrante 2)",
+    "Apellidos, Nombres – Código (integrante 3)",
+    "Apellidos, Nombres – Código (integrante 4)"
+  ],
+  "docente": "Apellidos, Nombres del docente"
+}

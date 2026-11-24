@@ -1,8 +1,8 @@
-# 5. Seguridad: ISO/IEC 27001:2022 y OWASP Top 10
+# CAPÍTULO VI: SEGURIDAD (ISO/IEC 27001:2022 Y OWASP TOP 10)
 
-## 5.1 Alcance y lo que se afirma
+## 6.1 Alcance y lo que se afirma
 
-> **Este proyecto adopta y alinea sus controles con ISO/IEC 27001:2022 y OWASP Top 10 (edición 2021). No está certificado ni auditado por un tercero.** Cuando el informe dice "implementado" significa que existe y se comprobó; no significa "cumple la norma". La edición 2021 de OWASP se mantiene por consistencia con el curso anterior; no se verificó si procede una más reciente.
+> **Este proyecto adopta y alinea sus controles con ISO/IEC 27001:2022 y OWASP Top 10 (edición 2021). No está certificado ni auditado por un tercero.** Cuando el informe dice "implementado" significa que existe y se comprobó; no significa "cumple la norma". Se usó la edición 2021 de OWASP; no se verificó si procede una más reciente.
 
 **Alcance.** La plataforma ClickClak en Azure: los tres servidores, la red virtual, el balanceador, el almacenamiento de respaldos, el código, el flujo de integración continua y los datos que trata. Quedan fuera las instalaciones físicas y la infraestructura base de Azure (responsabilidad compartida: el proveedor gestiona el centro de datos; el equipo, lo que despliega encima).
 
@@ -18,7 +18,7 @@
 | Respaldos | Confidencial | Azure Blob | Exposición; restauración no probada |
 | Código e imágenes | Interno | GitHub (repositorio público) | Manipulación de la cadena de suministro |
 
-## 5.2 Riesgos de la arquitectura de tres servidores
+## 6.2 Riesgos de la arquitectura de tres servidores
 
 La tabla muestra el estado **real**, no el planificado.
 
@@ -36,9 +36,9 @@ La tabla muestra el estado **real**, no el planificado.
 | R9 | Cadena de suministro: imágenes y dependencias | Trivy en integración continua; actualización de dependencias | **Parcial** (no se fijan por digest las imágenes base) |
 | R10 | Bitácoras sin alertas de seguridad | Alertas sobre 401 y 429 repetidos | **Parcial** (logs no centralizados) |
 
-## 5.3 Cifrado interno (OWASP A02, ISO 8.24)
+## 6.3 Cifrado interno (OWASP A02, ISO 8.24)
 
-El curso anterior dejó el tráfico entre la aplicación y la base como riesgo aceptado. Aquí se corrigió.
+Al iniciar el proyecto el tráfico entre la aplicación y la base de datos no iba cifrado, y la replicación tampoco. Se corrigió.
 
 **Diseño.** Una autoridad certificadora privada (RSA 3072, 3 años) y un certificado de servidor por nodo (RSA 2048, 1 año) con la **IP del nodo en el nombre alternativo**. La clave de la autoridad vive **solo en el testigo**, nunca en los nodos ni en el repositorio. Se aplicó **de forma gradual** para no romper el clúster en marcha: primero TLS opcional, luego los backends con `sslmode=verify-full`, y solo al final la imposición (`pg_hba` con `hostssl` y una regla que **rechaza** lo no cifrado en la red entre nodos).
 
@@ -55,7 +55,7 @@ El curso anterior dejó el tráfico entre la aplicación y la base como riesgo a
 
 **Límites.** Los certificados caducan en 1 año y la autoridad en 3; **no hay renovación automática**. La clave privada de cada servidor está en disco, sin HSM ni Key Vault. Los exportadores y el socket Unix hablan dentro del mismo nodo sin TLS: es tráfico que no sale de la máquina.
 
-## 5.4 Vulnerabilidades de componentes (OWASP A06, ISO 8.8)
+## 6.4 Vulnerabilidades de componentes (OWASP A06, ISO 8.8)
 
 Se escanean con **Trivy** el código (dependencias de Maven y npm, y secretos) y las **cuatro imágenes** del proyecto, en **cada cambio, en cada *pull request* y cada lunes**, con integración continua (`.github/workflows/seguridad.yml`). El escaneo falla ante cualquier hallazgo HIGH o CRITICAL que no esté aceptado por escrito.
 
@@ -71,23 +71,23 @@ Se escanean con **Trivy** el código (dependencias de Maven y npm, y secretos) y
 
 > **Decisión sobre la herramienta.** En marzo de 2026 se comprometieron casi todas las etiquetas de la acción `aquasecurity/trivy-action` y se publicó un binario malicioso de Trivy (v0.69.4) ([aviso oficial](https://github.com/aquasecurity/trivy/security/advisories/GHSA-69fq-xp46-6x23)). Por eso el CI no usa esa acción: ejecuta la **imagen oficial de Trivy 0.57.1 fijada por su digest**, que no puede ser reemplazada moviendo una etiqueta. Es una lección práctica de la cadena de suministro (A08) aplicada a la propia herramienta de seguridad.
 
-## 5.5 OWASP Top 10 (2021) aplicado
+## 6.5 OWASP Top 10 (2021) aplicado
 
 @tabla Correspondencia con OWASP Top 10 y estado real
 | Riesgo | Estado | Controles |
 |---|---|---|
 | **A01 Control de acceso** | Parcial | Roles y autorización en Spring Security; rol de respaldo de solo lectura; rol del exportador solo con `pg_monitor`; `pg_hba` por CIDR. **Pendiente:** el rol con el que corre la aplicación todavía es el propietario (puede ejecutar DDL) y falta la matriz automática de roles por endpoint |
-| **A02 Fallas criptográficas** | Implementado | TLS 1.3 verificado, SCRAM-SHA-256, tokens guardados como huella SHA-256 (sección 5.3) |
-| **A03 Inyección** | Heredado | Consultas parametrizadas con JPA (del curso anterior; no se volvió a auditar) |
+| **A02 Fallas criptográficas** | Implementado | TLS 1.3 verificado, SCRAM-SHA-256, tokens guardados como huella SHA-256 (sección 6.3) |
+| **A03 Inyección** | Parcial | Consultas parametrizadas con JPA; **no se realizó una auditoría de inyección en este proyecto** |
 | **A04 Diseño inseguro** | Parcial | Un solo escritor con *fencing*; RTO y RPO medidos. **Falta** un modelo de amenazas formal |
 | **A05 Configuración incorrecta** | Implementado | Sin IP pública en nodos ni testigo; SSH restringido; contenedores sin privilegios con capacidades descartadas; límites de recursos; PostgreSQL no se abre a Internet |
-| **A06 Componentes vulnerables** | Implementado | Trivy en CI y semanal; excepciones con caducidad (sección 5.4) |
+| **A06 Componentes vulnerables** | Implementado | Trivy en CI y semanal; excepciones con caducidad (sección 6.4) |
 | **A07 Fallos de autenticación** | Parcial | SSH solo con llave; secretos aleatorios; límite de intentos compartido entre nodos. **Pendiente:** segundo factor para supervisores y Recursos Humanos |
 | **A08 Integridad de software y datos** | Parcial | Huella SHA-256 de cada respaldo (se rechaza uno manipulado); Trivy fijado por digest. **Faltan:** firma de imágenes y fijar por digest las imágenes base |
 | **A09 Registro y monitoreo** | Parcial | 17 alertas, incluidas las de autenticaciones fallidas y peticiones bloqueadas. **Los logs no están centralizados** |
 | **A10 SSRF** | No aplica | La aplicación no hace peticiones a destinos indicados por el usuario |
 
-## 5.6 ISO/IEC 27001:2022: controles del Anexo A seleccionados
+## 6.6 ISO/IEC 27001:2022: controles del Anexo A seleccionados
 
 @tabla Controles del Anexo A y su estado
 | Control | Aplicación | Estado |
@@ -106,7 +106,7 @@ Se escanean con **Trivy** el código (dependencias de Maven y npm, y secretos) y
 
 > **Qué falta para hablar de un SGSI.** Un sistema de gestión real exige además política, roles formalmente asignados, evaluación de riesgos periódica y auditoría interna. Aquí hay un registro de riesgos y controles técnicos con evidencia, **no un SGSI completo**.
 
-## 5.7 Pendientes de seguridad, declarados
+## 6.7 Pendientes de seguridad, declarados
 
 - **Segundo factor** para supervisores y Recursos Humanos (queda como riesgo aceptado).
 - **Rol de base de datos de ejecución sin permisos de DDL** (hoy la aplicación entra como propietario).

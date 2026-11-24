@@ -1,12 +1,12 @@
-# 1. Fase 1: análisis, virtualización y almacenamiento
+# CAPÍTULO II: ANÁLISIS Y ARQUITECTURA BASE (FASE 1)
 
-## 1.1 Descripción del sistema base
+## 2.1 Descripción del sistema base
 
-**Objetivo de negocio.** Antes de ClickClak, el control de asistencia se hacía con una hoja de cálculo mensual: cada colaborador la completaba por su cuenta, la enviaba y Recursos Humanos consolidaba los archivos a mano. Ese instrumento es autodeclarado: no produce evidencia verificable de dónde y cuándo se marcó. ClickClak lo reemplaza con **marcaciones desde el dispositivo del colaborador, validadas por ubicación**, con gestión de incidencias (tardanzas, ausencias, permisos) y un panel para supervisores y Recursos Humanos. La organización no dispone de cifras de plantilla ni de volúmenes, así que la demanda se estima con escenarios (sección 1.2).
+**Qué hace el sistema.** ClickClak registra la asistencia del personal de campo y gestiona sus incidencias (tardanzas, ausencias y permisos). El colaborador marca desde su teléfono; el sistema valida la marcación contra la ubicación de la sede o de la asignación y guarda un evento verificable. Supervisores y Recursos Humanos administran usuarios, sedes, turnos, asignaciones e incidencias desde un panel web. Como la marcación es la evidencia de la asistencia, **el servicio debe estar disponible durante la jornada y sus datos no pueden perderse**: de ahí la problemática que aborda este proyecto (capítulo I).
 
-**Arquitectura inicial.** El *back-end* es una API REST pura sobre Spring Boot, sin vistas del lado del servidor, organizada en capas: controladores (reciben la petición HTTP), servicios (reglas de negocio), repositorios (acceso a datos) y entidades. Dos clientes React consumen esa API: una **aplicación de campo (PWA)** con cola local sin conexión, y un **panel administrativo**. Todo se desplegó en el curso anterior en **una sola máquina virtual** con Docker Compose.
+**Arquitectura de la aplicación.** El *back-end* es una API REST pura sobre Spring Boot, sin vistas del lado del servidor, organizada en capas: controladores (reciben la petición HTTP), servicios (reglas de negocio), repositorios (acceso a datos) y entidades. Dos clientes React consumen esa API: una **aplicación de campo (PWA)** con cola local sin conexión, y un **panel administrativo**. El punto de partida del proyecto era un despliegue en **una sola máquina virtual** con Docker Compose (sección 1.2).
 
-@tabla Componentes del sistema y su tecnología (versión de este proyecto)
+@tabla Componentes del sistema y su tecnología
 | Componente | Tecnología | Función |
 |---|---|---|
 | Back-end (API REST) | Java 21, Spring Boot 3.5.14, Spring Data JPA, Spring Security, Flyway, Hibernate Spatial | Reglas de negocio, validación espacial, autenticación y autorización, auditoría y persistencia |
@@ -15,26 +15,24 @@
 | Panel administrativo | React, TypeScript, Vite, Tailwind CSS | Gestión de usuarios, sedes, turnos, asignaciones e incidencias |
 | Proxy | Nginx | Cifrado en tránsito, cabeceras de seguridad, límites de peticiones y enrutamiento |
 
-> **Punto de partida y qué cambió.** En el curso anterior el backend estaba en Spring Boot 3.3.4 y guardaba cuatro tipos de estado en la memoria del proceso (tokens revocados, intentos fallidos de acceso, tokens de recuperación de clave y desafíos de WebAuthn). Eso impide ejecutar dos instancias coherentes. Es la primera brecha que este proyecto cerró (capítulo 4).
+## 2.2 Análisis de requerimientos cloud
 
-## 1.2 Análisis de requerimientos cloud
+### Cómputo, memoria y disco: consumo medido
 
-### Cómputo, memoria y disco: línea base medida
+Los valores se midieron en el **nodo 1 del sistema desplegado**, con la aplicación en reposo (sin usuarios reales), el 24 de noviembre de 2026. La VM es una `Standard_B2als_v2` (2 vCPU y 4 GiB).
 
-Los valores siguientes se midieron en el despliegue de una sola VM del curso anterior (Standard_B2als_v2, 2 vCPU y 4 GiB), sin carga de usuarios reales.
-
-@tabla Consumo del sistema en una sola VM (línea base, 3 de octubre de 2026, informe APF2)
-| Elemento | Valor medido |
+@tabla Consumo del nodo 1 con el sistema en reposo (medido con `docker stats`, `free` y `df`)
+| Elemento | Memoria en uso / límite |
 |---|---|
-| Back-end | 296,4 MiB de memoria |
-| PostgreSQL primaria | 40,9 MiB |
-| PostgreSQL réplica local | 20,0 MiB |
-| Proxy y dos frontends | ≈ 11,2 MiB en total |
-| Sistema completo | 1,2 GiB usados de 3,8 GiB (swap: 80 KiB de 2 GiB) |
-| Imágenes | Backend 409 MB; cada frontend 74 MB |
-| Disco | 14 % de 61 GB |
+| Back-end | 343,6 MiB / 900 MiB |
+| PostgreSQL (primaria en ese momento) | 58,1 MiB / 640 MiB |
+| Proxy | 5,4 MiB / 128 MiB |
+| Dos frontends | 3,2 y 3,1 MiB / 64 MiB cada uno |
+| Exportadores de monitoreo (cAdvisor, node-exporter, postgres_exporter) | 57,4 · 17,4 · 13,2 MiB |
+| **VM completa** | **1 290 MB usados de 3 906 MB** |
+| Disco | 29 % de 61 GB (18 GB usados, con las imágenes de Docker) |
 
-**Lectura.** La memoria alcanza con holgura para una instancia de la aplicación más su base, y es el motivo por el que la VM de 4 GiB se mantuvo en lugar de la de 8 GiB (el doble de costo). El recurso que resultó **limitante bajo carga** no fue la memoria sino la **CPU** (capítulo 3).
+**Lectura.** La memoria alcanza con holgura para una instancia de la aplicación más su base, y es el motivo por el que la VM de 4 GiB se mantuvo en lugar de la de 8 GiB (el doble de costo). El recurso que resultó **limitante bajo carga** no fue la memoria sino la **CPU** (capítulo IV).
 
 ### Demanda esperada
 
@@ -68,7 +66,7 @@ Según la tarifa de Azure no se cobra el tráfico dentro de una misma red virtua
 
 ### Requerimientos de disponibilidad derivados
 
-De la guía del proyecto y del análisis anterior se fijaron los requerimientos que guían el diseño. Son objetivos de diseño, no un acuerdo de nivel de servicio firmado con una organización.
+De la problemática del capítulo I y de la guía del proyecto se fijaron los requerimientos que guían el diseño. Son objetivos de diseño, no un acuerdo de nivel de servicio firmado con una organización.
 
 @tabla Requerimientos de disponibilidad y cómo se cubren
 | # | Requerimiento | Cubierto por |
@@ -80,7 +78,7 @@ De la guía del proyecto y del análisis anterior se fijaron los requerimientos 
 | RC5 | Se puede observar la salud del sistema, también durante una falla | Monitoreo fuera de los nodos de aplicación |
 | RC6 | El tráfico entre componentes no viaja en claro | TLS interno verificado |
 
-## 1.3 Estrategia de virtualización y almacenamiento
+## 2.3 Estrategia de virtualización y almacenamiento
 
 ### Modelo de despliegue: IaaS, PaaS o híbrido
 
@@ -91,12 +89,12 @@ De la guía del proyecto y del análisis anterior se fijaron los requerimientos 
 |---|---|---|---|
 | Control de replicación y failover | **Total**: scripts propios, se demuestran y miden | El proveedor lo gestiona; poco que mostrar | Solo para la base, administrada |
 | Soporte de PostGIS y versión exacta | Imagen elegida por el equipo (PostGIS 3.4) | No verificado en esta suscripción | Idem |
-| Costo con USD 79 de crédito | Calculado con precios de lista (capítulo 6) | **No verificado** | **No verificado** |
+| Costo con USD 79 de crédito | Calculado con precios de lista (capítulo VII) | **No verificado** | **No verificado** |
 | Esfuerzo de operación | Alto: parches, respaldos, seguridad del sistema operativo | Bajo | Medio |
 | Portabilidad | Alta: los contenedores corren en cualquier nube | Menor: atado a servicios concretos | Media |
 | Encaje con lo que evalúa el curso | **Alto**: balanceo, replicación, DRP y monitoreo propios | Bajo: se delega justo lo que se debe demostrar | Medio |
 
-**Decisión: IaaS con contenedores.** Las razones, en orden de peso: (1) el curso evalúa precisamente replicación, tolerancia a fallos y recuperación ante desastres, que en un servicio administrado quedarían ocultas tras el proveedor; (2) el sistema ya estaba empaquetado con Docker Compose, sin cambios de código; (3) el control sobre PostGIS y sus versiones; (4) la portabilidad. **El costo de esta decisión** es asumir la operación: parches, respaldos y seguridad del sistema operativo son responsabilidad del equipo (modelo de responsabilidad compartida), y el failover es guionizado, no automático (capítulo 4). Un servicio administrado ofrecería alta disponibilidad con menos esfuerzo; si el sistema pasara a producción real, sería la primera alternativa a evaluar.
+**Decisión: IaaS con contenedores.** Las razones, en orden de peso: (1) el curso evalúa precisamente replicación, tolerancia a fallos y recuperación ante desastres, que en un servicio administrado quedarían ocultas tras el proveedor; (2) el sistema ya estaba empaquetado con Docker Compose, sin cambios de código; (3) el control sobre PostGIS y sus versiones; (4) la portabilidad. **El costo de esta decisión** es asumir la operación: parches, respaldos y seguridad del sistema operativo son responsabilidad del equipo (modelo de responsabilidad compartida), y el failover es guionizado, no automático (capítulo V). Un servicio administrado ofrecería alta disponibilidad con menos esfuerzo; si el sistema pasara a producción real, sería la primera alternativa a evaluar.
 
 ### Tipo de almacenamiento
 
@@ -122,4 +120,4 @@ Se compararon cuatro topologías. La elegida es la **opción C**: dos nodos idé
 
 Una base dedicada sola (B) no da tolerancia a fallos: solo mueve el punto único de falla. El testigo se eligió porque el monitoreo debe vivir **fuera del dominio de falla** de lo que vigila: si Prometheus y Grafana corrieran en un nodo y este cayera, la demostración quedaría a ciegas justo cuando se provoca la falla.
 
-> **Qué es y qué no es el testigo.** El tercer servidor aloja el monitoreo, los respaldos y la generación de carga. **No es todavía un votante de quórum**: la promoción de la base ante una caída es manual y guionizada, no automática. Con dos nodos de base y un testigo sin base de datos no hay mayoría para decidir solo; un gestor como Patroni con etcd o pg_auto_failover lo automatizaría y es la mejora natural (sección 4.6).
+> **Qué es y qué no es el testigo.** El tercer servidor aloja el monitoreo, los respaldos y la generación de carga. **No es todavía un votante de quórum**: la promoción de la base ante una caída es manual y guionizada, no automática. Con dos nodos de base y un testigo sin base de datos no hay mayoría para decidir solo; un gestor como Patroni con etcd o pg_auto_failover lo automatizaría y es la mejora natural (sección 5.6).

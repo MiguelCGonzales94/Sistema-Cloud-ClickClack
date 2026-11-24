@@ -1,30 +1,30 @@
-# 4. Fase 3: arquitectura cloud, resiliencia y alta disponibilidad
+# CAPÍTULO V: RESILIENCIA, PATRONES Y RECUPERACIÓN ANTE DESASTRES (FASE 3)
 
-## 4.1 Patrones de diseño cloud
+## 5.1 Patrones de diseño cloud
 
 Se listan **solo los patrones que el código respalda**, con el archivo donde viven y cómo se comprobaron. Los que no se implementaron se declaran aparte.
 
 @tabla Patrones aplicados, su ubicación y su verificación
 | Patrón | Cómo se aplica | Dónde está | Verificación |
 |---|---|---|---|
-| **Health Endpoint Monitoring** | El proxy expone `/salud`, que consulta `/actuator/health` del backend (incluye el estado de la base). Lo usan el balanceador, `HEALTHCHECK` de Docker y las sondas externas | `infra/nginx/plantillas/ubicaciones-comunes.inc.template`; `backend/Dockerfile` | Caída de un backend: el balanceador lo retiró en ≈ 11 s (sección 4.3) |
+| **Health Endpoint Monitoring** | El proxy expone `/salud`, que consulta `/actuator/health` del backend (incluye el estado de la base). Lo usan el balanceador, `HEALTHCHECK` de Docker y las sondas externas | `infra/nginx/plantillas/ubicaciones-comunes.inc.template`; `backend/Dockerfile` | Caída de un backend: el balanceador lo retiró en ≈ 11 s (sección 5.3) |
 | **Throttling (limitación de tasa)** | Límites por IP: inicio de sesión 10 por minuto, recuperación de clave 6 por minuto, API 20 por segundo con ráfaga de 40 y 40 conexiones simultáneas; responde 429 | `infra/nginx/plantillas/clickclak.conf.template` | Prueba P5: 45 % de 1 601 peticiones recibió 429 sin degradar el servicio |
 | **Gateway Routing y Offloading** | Un único proxy por nodo termina TLS, enruta a los frontends y a la API, añade cabeceras de seguridad y la cabecera `X-Nodo` | `clickclak.conf.template`, `proxy-backend.inc.template` | Reparto verificado con `X-Nodo` |
 | **Idempotent Receiver (receptor idempotente)** | Cada marcación lleva un identificador generado en el dispositivo (`uuidCliente`); si ya existe, el servicio devuelve la marcación registrada en lugar de duplicarla. La base lo refuerza con una restricción de unicidad | `MarcacionService.registrarMarcacion`; restricción `uk_marcacion_uuid_cliente` en `V1__esquema_inicial.sql` | Prueba P3: 2 000 envíos sobre 500 identificadores dejaron **486 filas distintas**, sin duplicados ni pérdidas |
 | **Retry con cola local** (*offline-first*) | La PWA guarda las marcaciones en IndexedDB y las reenvía al recuperar conexión, contando los intentos y distinguiendo errores reintentables | `frontend-campo/src/offline/colaMarcaciones.ts` | Implementado; **no se ejercitó** en las pruebas en la nube |
 | **Reconexión y failover del cliente de base de datos** | La URL de JDBC lista ambos nodos con `targetServerType=primary` y `connectTimeout=3`: el backend encuentra solo a la primaria tras una promoción | `infra/nodos/*.yml` | Failover real: ambos backends siguieron a la nueva primaria sin intervención |
-| **Estado externalizado** (servicios sin estado) | Tokens revocados, intentos fallidos, recuperación de clave y desafíos WebAuthn viven en PostgreSQL, no en la memoria del proceso | `backend/.../security/Almacen*Jdbc.java`; migración `V5__estado_compartido_del_backend.sql` | 329 pruebas; sesión iniciada en un nodo válida en el otro (sección 3.2) |
+| **Estado externalizado** (servicios sin estado) | Tokens revocados, intentos fallidos, recuperación de clave y desafíos WebAuthn viven en PostgreSQL, no en la memoria del proceso | `backend/.../security/Almacen*Jdbc.java`; migración `V5__estado_compartido_del_backend.sql` | 329 pruebas; sesión iniciada en un nodo válida en el otro (sección 4.2) |
 | **Aislamiento por límites de recursos** (aproximación al patrón *Bulkhead*) | Límite de memoria por contenedor y de conexiones por pool, de modo que un componente desbordado no agota a los demás | `infra/docker-compose.prod.yml` | Los límites se aplicaron; no se provocó un agotamiento a propósito |
 
 **No implementados, y se dice:**
 
 - **Circuit Breaker** (interruptor de circuito): el backend no tiene uno. Las llamadas externas son pocas (geocodificación con tiempo límite de 3 s).
 - **Queue-Based Load Leveling del lado servidor**: no hay un intermediario de mensajes. La cola local de la PWA amortigua ráfagas en el cliente, pero el servidor recibe las peticiones directamente.
-- **Leader Election automática**: la promoción de la base es guionizada y manual (sección 4.6).
+- **Leader Election automática**: la promoción de la base es guionizada y manual (sección 5.6).
 
-## 4.2 Backend sin estado compartido
+## 5.2 Backend sin estado compartido
 
-Esta fue la brecha de código más delicada. En el curso anterior el backend guardaba **cuatro tipos de estado en la memoria de su proceso**: tokens revocados (cierre de sesión), contador de intentos fallidos (protección contra fuerza bruta), tokens de recuperación de clave y desafíos de WebAuthn. Con dos instancias, un cierre de sesión hecho en un nodo no valdría en el otro, y los intentos fallidos se contarían por separado, **duplicando el límite que protege las cuentas**.
+Esta fue la brecha de código más delicada. Al iniciar el proyecto el backend guardaba **cuatro tipos de estado en la memoria de su proceso**: tokens revocados (cierre de sesión), contador de intentos fallidos (protección contra fuerza bruta), tokens de recuperación de clave y desafíos de WebAuthn. Con dos instancias, un cierre de sesión hecho en un nodo no valdría en el otro, y los intentos fallidos se contarían por separado, **duplicando el límite que protege las cuentas**.
 
 La solución fue mover los cuatro a PostgreSQL con una migración (`V5`), definiendo para cada uno una interfaz (`Almacen*`) y una implementación JDBC, con expiración de los registros.
 
@@ -36,7 +36,7 @@ Tres decisiones merecen mención porque eran trampas reales:
 
 El resultado se verificó con **329 pruebas automáticas** (incluidas pruebas de cada almacén contra una base real) y en vivo: el inicio de sesión se hizo en un backend y el token se usó en el otro durante las pruebas de carga.
 
-## 4.3 Tolerancia a fallos: balanceo y redundancia
+## 5.3 Tolerancia a fallos: balanceo y redundancia
 
 **Redundancia.** Hay dos nodos activos con los mismos contenedores. Ninguno es "de reserva": ambos atienden tráfico. La aplicación es idéntica en ambos y la base es una primaria y una standby.
 
@@ -58,7 +58,7 @@ Se detuvo el backend del nodo 1 mientras se enviaban sondas a la URL pública.
 
 El sistema **no se cae por la pérdida de un nodo de aplicación**: los ≈ 10 s de errores son el tiempo que tarda el sondeo en confirmar el fallo, el costo de elegir un sondeo cada 5 s con dos fallos (acortarlo aumentaría las falsas alarmas).
 
-## 4.4 Replicación, failover y recuperación ante desastres
+## 5.4 Replicación, failover y recuperación ante desastres
 
 ### Cómo se replica
 
@@ -115,7 +115,7 @@ Se provocó una caída abrupta de la primaria (`docker kill`) mientras un escrit
 2. **La recuperación tras una caída abrupta puede deshacer esa configuración**: el modo de arranque monousuario reescribió el archivo de control con el valor por defecto hasta que se le pasó `-c wal_log_hints=on`.
 3. **Medir mal también cuenta.** La primera versión del ensayo informó un RTO de 0 s porque tomaba la primera escritura tras la caída en lugar del hueco; se corrigió y las cifras de arriba son las recalculadas.
 
-## 4.5 Respaldos y restauración
+## 5.5 Respaldos y restauración
 
 **Por qué hacen falta aunque haya réplica.** La réplica copia también un borrado equivocado: no es un respaldo. Se comprobó: se creó una tabla de 1 000 filas, se respaldó, se ejecutó `DROP TABLE` en la primaria y **la standby también perdió la tabla**; la restauración desde Azure Blob la devolvió con sus 1 000 filas.
 
@@ -136,7 +136,7 @@ Se provocó una caída abrupta de la primaria (`docker kill`) mientras un escrit
 
 El **RPO por respaldo** es de hasta 1 hora y el **RTO por respaldo** de unos 10 s con esta base pequeña, más el tiempo humano de decidir y apuntar la aplicación. Son respaldos **lógicos** (`pg_dump`): restaurar recrea la base, no la reincorpora al clúster, y no hay archivado continuo del WAL, así que **no permiten recuperar a un instante exacto**.
 
-## 4.6 Limitaciones y mejoras
+## 5.6 Limitaciones y mejoras
 
 @tabla Limitaciones declaradas y su mejora natural
 | Limitación | Efecto | Mejora |
@@ -150,8 +150,8 @@ El **RPO por respaldo** es de hasta 1 hora y el **RTO por respaldo** de unos 10 
 | Una sola región | Una caída regional no se cubre | Réplica o respaldo en otra región |
 | VM de la serie B | Rendimiento limitado si se agotan los créditos de CPU; **no se pudo comprobar** | VM de uso general o métrica de créditos |
 
-## 4.7 Diagrama lógico
+## 5.7 Diagrama lógico
 
-Los diagramas físico y de red (figuras 1 y 2) están en la sección 2.3, y la secuencia de failover (figura 3) en la sección 4.4. Todos están en `docs/diagramas/` en formato editable (`.drawio`) y como imagen.
+Los diagramas físico y de red (figuras 1 y 2) están en la sección 3.3, y la secuencia de failover (figura 3) en la sección 5.4. Todos están en `docs/diagramas/` en formato editable (`.drawio`) y como imagen.
 
 ![Diagrama lógico: contenedores, redes y flujos](../diagramas/02-logico-contenedores.png){paisaje}

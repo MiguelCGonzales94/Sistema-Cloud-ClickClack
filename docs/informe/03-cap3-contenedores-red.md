@@ -1,6 +1,6 @@
-# 2. Fase 2: contenedorización, orquestación y topología de red
+# CAPÍTULO III: CONTENEDORIZACIÓN, ORQUESTACIÓN Y RED (FASE 2)
 
-## 2.1 Contenedorización
+## 3.1 Contenedorización
 
 Cada servicio tiene su propio Dockerfile. Las decisiones de optimización y de seguridad de las imágenes se resumen en la tabla 1; los valores de tamaño y de consumo se **midieron en el nodo 1 en funcionamiento**.
 
@@ -37,11 +37,11 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=40s --retries=18 \
     CMD curl -fsS http://localhost:8080/actuator/health >/dev/null || exit 1
 ```
 
-> **Un costo que hay que decir.** Las imágenes de los frontends pasaron de **74 MB** (curso anterior) a unos **96 MB**, y la del backend de 409 MB a 436 MB. La causa es doble: se actualizó Spring Boot y se añadió `apk upgrade` en las imágenes para cerrar vulnerabilidades del sistema base (capítulo 5). Se priorizó la seguridad sobre el tamaño; no se midió el tamaño de las imágenes antes de cada cambio individual, solo antes y después del conjunto.
+> **Un costo en tamaño.** Las imágenes de los frontends y del proxy incluyen una capa de actualización de paquetes del sistema (`apk upgrade`) que cierra vulnerabilidades de la imagen base (capítulo VI). La del proxy pesa 95,8 MB frente a 74,5 MB de `nginx:1.27-alpine`, unos 21 MB más; las de los frontends, 96 MB. Se priorizó la seguridad sobre el tamaño.
 
-## 2.2 Orquestación multi-contenedor
+## 3.2 Orquestación multi-contenedor
 
-Se eligió **Docker Compose** en lugar de Kubernetes. Es una decisión de diseño razonada, no una limitación del equipo: con dos nodos y un solo servicio de aplicación por nodo, el valor que aportaría un orquestador (planificación entre muchos nodos, escalado automático de réplicas) no se aprovecha, y su propio consumo sobre VM de 4 GiB competiría con la aplicación. La contrapartida es que el escalado entre nodos y la recuperación son manuales o guionizados (capítulos 3 y 4).
+Se eligió **Docker Compose** en lugar de Kubernetes. Es una decisión de diseño razonada, no una limitación del equipo: con dos nodos y un solo servicio de aplicación por nodo, el valor que aportaría un orquestador (planificación entre muchos nodos, escalado automático de réplicas) no se aprovecha, y su propio consumo sobre VM de 4 GiB competiría con la aplicación. La contrapartida es que el escalado entre nodos y la recuperación son manuales o guionizados (capítulos IV y V).
 
 **Estructura de la orquestación.** Hay un archivo base común y un archivo por rol de nodo:
 
@@ -59,11 +59,11 @@ jdbc:postgresql://10.0.0.4:5432,10.0.0.5:5432/clickclak
 
 **Redes Docker.** Cada nodo tiene dos redes: `web` (proxy, frontends y backend) y `datos` (backend y PostgreSQL). El backend pertenece a ambas porque el proxy le reenvía las peticiones y él consulta la base. Los frontends solo ven la red `web`.
 
-> **Matiz de seguridad.** La red `datos` **no es interna** (`internal: true`) a propósito: PostgreSQL se publica en la IP privada de la VM para que el otro nodo pueda replicar, y una red interna de Docker no admite puertos publicados. La protección de la base descansa entonces en la red virtual de Azure (sin IP pública), `pg_hba.conf` (autoriza solo a los nodos) y TLS obligatorio (capítulo 5), no en el aislamiento de Docker.
+> **Matiz de seguridad.** La red `datos` **no es interna** (`internal: true`) a propósito: PostgreSQL se publica en la IP privada de la VM para que el otro nodo pueda replicar, y una red interna de Docker no admite puertos publicados. La protección de la base descansa entonces en la red virtual de Azure (sin IP pública), `pg_hba.conf` (autoriza solo a los nodos) y TLS obligatorio (capítulo VI), no en el aislamiento de Docker.
 
-**Política de reinicio.** Todos los servicios usan `restart: unless-stopped`. Esto tiene una consecuencia que el diseño de failover debe controlar: si un nodo cae y vuelve, su PostgreSQL arrancaría como primaria. Por eso el procedimiento de recuperación **aísla** al nodo caído antes de promover otro (capítulo 4).
+**Política de reinicio.** Todos los servicios usan `restart: unless-stopped`. Esto tiene una consecuencia que el diseño de failover debe controlar: si un nodo cae y vuelve, su PostgreSQL arrancaría como primaria. Por eso el procedimiento de recuperación **aísla** al nodo caído antes de promover otro (capítulo V).
 
-## 2.3 Topología de red y seguridad cloud
+## 3.3 Topología de red y seguridad cloud
 
 **Componentes de red en Azure** (grupo de recursos `rg-clickclak`, región Chile Central):
 
@@ -81,12 +81,29 @@ jdbc:postgresql://10.0.0.4:5432,10.0.0.5:5432/clickclak
 
 > **Sobre las subredes públicas y privadas que pide la guía.** El diseño usa **una sola subred**. La separación entre lo público y lo privado se logra por **asignación de IP** (solo el balanceador tiene IP pública) y por reglas del NSG, no por subredes distintas. Es una simplificación declarada; una segmentación en subredes por función sería el siguiente paso.
 
-**Puerta de entrada (Nginx).** El proxy de cada nodo termina TLS, enruta por ruta (la PWA de campo en el puerto 443, el panel administrativo en el 8443, la API bajo `/api`), añade cabeceras de seguridad y la cabecera `X-Nodo` que permite ver qué nodo respondió, y aplica los límites de peticiones descritos en el capítulo 4.
+**Puerta de entrada (Nginx).** El proxy de cada nodo termina TLS, enruta por ruta (la PWA de campo en el puerto 443, el panel administrativo en el 8443, la API bajo `/api`), añade cabeceras de seguridad y la cabecera `X-Nodo` que permite ver qué nodo respondió, y aplica los límites de peticiones descritos en el capítulo V.
 
-**Infraestructura como código.** El balanceador, el servidor testigo y los respaldos se crean con scripts de `az` versionados en `infra/azure/` (`balanceador.sh`, `testigo.sh` con `cloud-init-testigo.yaml`, `respaldos.sh`). **La red virtual, el NSG y los dos nodos de aplicación no tienen todavía script**: se crearon desde el portal y por clonado de un *snapshot* de la VM original. Reproducir el entorno desde cero exige, por ahora, esos pasos manuales (capítulo 6).
+**Infraestructura como código.** El balanceador, el servidor testigo y los respaldos se crean con scripts de `az` versionados en `infra/azure/` (`balanceador.sh`, `testigo.sh` con `cloud-init-testigo.yaml`, `respaldos.sh`). **La red virtual, el NSG y los dos nodos de aplicación no tienen todavía script**: se crearon desde el portal y por clonado de un *snapshot* de la VM original. Reproducir el entorno desde cero exige, por ahora, esos pasos manuales (capítulo VII).
 
 Los dos diagramas siguientes muestran la solución desplegada: primero la vista física en Azure y luego los puertos y flujos entre los servidores.
 
 ![Diagrama físico de la solución en Azure, región Chile Central](../diagramas/01-fisico-azure.png){paisaje}
 
 ![Red y puertos: quién habla con quién](../diagramas/04-red-y-puertos.png){paisaje}
+
+## 3.4 Ingeniería de plataforma: integración continua y despliegue
+
+**Integración continua (GitHub Actions).** El repositorio tiene cinco flujos de trabajo con permisos de solo lectura sobre el código (`contents: read`). Los cuatro primeros solo corren cuando cambia su componente, y todos cancelan la ejecución anterior de un mismo *pull request* si llega un cambio nuevo.
+
+@tabla Flujos de integración continua
+| Flujo | Qué verifica | Falla si |
+|---|---|---|
+| `backend` | Compila con Java 21 y ejecuta las **329 pruebas** contra un PostgreSQL con PostGIS real (contenedor de servicio) | Una prueba falla |
+| `frontend-admin`, `frontend-campo` | `npm ci`, compilación (TypeScript y Vite) y auditoría de las dependencias de producción; **los frontends no definen pruebas automáticas** | Hay vulnerabilidades altas o críticas en dependencias, o no compila |
+| `infra` | Sintaxis de todos los scripts de shell y validación de los archivos de Compose | Un script o un compose es inválido |
+| `seguridad` | Trivy sobre el código y las cuatro imágenes (capítulo VI) | Hay vulnerabilidades HIGH o CRITICAL no aceptadas por escrito |
+
+**Despliegue.** Se hace con `infra/scripts/desplegar.sh` en cada nodo (sección 3.2). Las actualizaciones se aplican **un nodo por vez**: mientras uno se reconstruye, el balanceador mantiene el servicio con el otro, y se comprueba con la prueba de humo antes de pasar al siguiente. Los secretos se generan en la propia máquina y no entran al repositorio.
+
+> **Lo que no hay.** No existe despliegue continuo: el despliegue es manual. Las imágenes se construyen en cada servidor y **no se publican en un registro** con etiquetas versionadas. La rama principal no tiene reglas de protección ni revisión obligatoria. Son mejoras naturales para un entorno de producción.
+

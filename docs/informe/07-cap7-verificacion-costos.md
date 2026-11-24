@@ -1,6 +1,24 @@
-# 6. Costos, limitaciones y lecciones aprendidas
+# CAPÍTULO VII: VERIFICACIÓN, COSTOS Y LECCIONES APRENDIDAS
 
-## 6.1 Costos
+## 7.1 Verificación
+
+La verificación combina pruebas automáticas, una prueba de humo del despliegue y pruebas no funcionales (carga y fallas) ejecutadas sobre el entorno real.
+
+@tabla Verificaciones realizadas y su resultado
+| Verificación | Método | Resultado |
+|---|---|---|
+| Pruebas automáticas del backend | 329 pruebas contra PostgreSQL con PostGIS real, en integración continua | En verde en la rama principal |
+| Compilación y auditoría de los frontends | TypeScript, Vite y auditoría de dependencias en integración continua (sin pruebas automáticas) | En verde |
+| Validación de la infraestructura | Sintaxis de scripts y de Compose en integración continua | En verde |
+| Prueba de humo del despliegue | `verificar-despliegue.sh`: contenedores, endpoints, replicación cifrada, roles de base y configuración | **69 correctas y 0 fallos** en el nodo 1; **66 y 0** en el nodo 2 |
+| Capacidad | Pruebas de carga P1 a P5 con k6, con una y dos instancias (capítulo IV) | Criterio cumplido (p95 de 7–14 ms hasta 50 usuarios, 0 % de errores hasta 200) |
+| Tolerancia a fallos | Caída de un backend; caída abrupta de la primaria (4 ensayos); borrado accidental y restauración (capítulo V) | RTO 30–36 s, RPO 0 y recuperación de los datos desde Blob |
+| Cifrado interno | Conexiones sin TLS y con nombre incorrecto, desde el testigo | Ambas **rechazadas**; la correcta conecta con TLS 1.3 |
+| Vulnerabilidades | Trivy en integración continua | Backend 4, frontends 0 y proxy 0 (capítulo VI) |
+
+**Qué no se verificó.** Los frontends no tienen pruebas automáticas (su integración continua compila y audita dependencias), de modo que la cola sin conexión de la aplicación de campo no se ejercitó de forma automática ni en las pruebas en la nube. Tampoco hubo una prueba de penetración independiente ni una auditoría de inyección.
+
+## 7.2 Costos
 
 El proyecto corre sobre el crédito de **Azure for Students (USD 79 disponibles)**, que vence el 2 de octubre de 2027, en la región Chile Central. Los precios son **de lista**, tomados de la API pública de precios de Azure el 22 de noviembre de 2026; la cifra final aparece en Cost Management.
 
@@ -24,9 +42,9 @@ El proyecto corre sobre el crédito de **Azure for Students (USD 79 disponibles)
 
 **Lectura.** Ninguna opción aguanta 24 horas al día con el crédito de USD 79 (un mes 24/7 costaría unos USD 135 en la opción elegida): la operación exige **encender solo para pruebas y sustentación**. El peso de los discos y las IP, que se cobran apagados, justifica además liberar lo que no se use.
 
-> **No verificado.** El saldo de crédito realmente consumido a la fecha no se comprobó en Cost Management, y la alerta de presupuesto no se verificó. Tampoco se verificó el precio de PostgreSQL administrado en Chile Central, por lo que la comparación con un servicio administrado es cualitativa (sección 1.3).
+> **No verificado.** El saldo de crédito realmente consumido a la fecha no se comprobó en Cost Management, y la alerta de presupuesto no se verificó. Tampoco se verificó el precio de PostgreSQL administrado en Chile Central, por lo que la comparación con un servicio administrado es cualitativa (sección 2.3).
 
-## 6.2 Limitaciones consolidadas
+## 7.3 Limitaciones consolidadas
 
 @tabla Lo que no se logró o no se pudo comprobar
 | Área | Limitación |
@@ -38,20 +56,20 @@ El proyecto corre sobre el crédito de **Azure for Students (USD 79 disponibles)
 | Red | Una sola subred; sin zonas de disponibilidad; una sola región |
 | Seguridad | Sin segundo factor; la aplicación entra a la base como propietario; sin prueba ofensiva; certificados internos sin renovación automática; sin política de seguridad formal |
 | Observabilidad | Logs sin centralizar |
-| Rendimiento | Créditos de CPU de las VM de la serie B no medidos; pruebas más cortas que las planeadas y con base pequeña |
+| Rendimiento | Créditos de CPU de las VM de la serie B no medidos; pruebas de corta duración y con base pequeña |
 | Tráfico de red | Estimado, no medido |
 
-## 6.3 Lecciones aprendidas
+## 7.4 Lecciones aprendidas
 
 Varias lecciones salieron de **errores propios** que se detectaron y se corrigieron; se documentan porque son lo más útil para quien reproduzca el proyecto.
 
 1. **Una limitación de la cuenta se convirtió en una mejora de seguridad.** La cuota de 3 IP públicas obligó a dejar una sola, la del balanceador. Una NIC con IP pública propia no puede unirse a un grupo con regla de salida: el orden correcto es crear el NAT de SSH, comprobar, quitar la IP y recién entonces sumarla al grupo de salida.
 2. **El sondeo del balanceador apuntaba al lugar equivocado.** Git Bash en Windows convirtió `/salud` en una ruta de Windows (`C:/Program Files/Git/salud`) y el balanceador sondeaba el frontend en lugar del backend. Dos frontends llevaron media hora detenidos sin que nada lo avisara. Se corrigió con `MSYS_NO_PATHCONV=1`.
 3. **Los finales de línea importan.** Editar scripts con Python en Windows los dejó en CRLF y `sh` falló en la VM. `tar` desde Windows perdió el bit de ejecución de un script y el proxy no arrancó. Los scripts deben guardarse con LF.
-4. **Registrar un fallo dentro de una transacción que se revierte lo anula.** Por eso los almacenes de estado escriben con `REQUIRES_NEW` (sección 4.2).
+4. **Registrar un fallo dentro de una transacción que se revierte lo anula.** Por eso los almacenes de estado escriben con `REQUIRES_NEW` (sección 5.2).
 5. **Un nombre de variable de entorno mal escrito tumbó el arranque.** `…PERCENTILES_HISTOGRAM…` se interpretó como otra propiedad; la forma correcta es `…PERCENTILESHISTOGRAM…`. Durante esa caída el sitio siguió respondiendo desde el otro nodo, lo que de paso probó la redundancia.
 6. **Medir mal también cuenta.** El primer ensayo de failover informó un RTO de 0 s, y el primer intento de la prueba P3 no generaba identificadores repetidos entre instancias. Ambos se detectaron, se descartaron y se repitieron con el método corregido; el intento descartado se conserva en el repositorio.
 7. **Verificar que un cambio se aplicó.** Un script de parche con un error de sintaxis no aplicó ningún cambio y las comprobaciones posteriores eran de archivos sin tocar; se detectó porque un contador de líneas daba cero.
 8. **Los números sin cero inicial no son JSON.** Los scripts de respaldo emitían `.09` (la salida de `bc`), que un lector de JSON rechaza; se detectó al intentar leer la evidencia y se corrigió en los scripts.
 9. **El límite de peticiones por nodo se duplica con dos nodos.** Un efecto no obvio del escalado horizontal que hay que declarar.
-10. **La cadena de suministro alcanza a la propia herramienta de seguridad.** La acción de Trivy fue comprometida en 2026; el CI usa la imagen fijada por digest (sección 5.4).
+10. **La cadena de suministro alcanza a la propia herramienta de seguridad.** La acción de Trivy fue comprometida en 2026; el CI usa la imagen fijada por digest (sección 6.4).

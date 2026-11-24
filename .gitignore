@@ -35,3 +35,6 @@ infra/postgres/data/
 
 # Cuenta de almacenamiento de respaldos (la escribe respaldos.sh; no se publica)
 infra/azure/.cuenta-respaldos
+
+# Datos de portada con nombres y códigos: viven solo en la carpeta local del informe
+portada.json

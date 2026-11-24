@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Genera el informe técnico en DOCX a partir de los capítulos Markdown de esta carpeta.
 
-Uso:   python construir.py <carpeta_de_salida>
+Uso:   python construir.py <carpeta_de_salida> [nombre_del_archivo_sin_extension]
 Luego: powershell -File exportar-pdf.ps1 <docx> <pdf>      (Word actualiza el índice y exporta el PDF)
 
 Subconjunto de Markdown admitido (el que usan los capítulos):
@@ -11,6 +11,7 @@ Subconjunto de Markdown admitido (el que usan los capítulos):
   ```              bloque de código    > texto           nota
   **negrita**, *cursiva*, `código`     ---pagina---      salto de página
 """
+import json
 import re
 import sys
 from pathlib import Path
@@ -25,7 +26,6 @@ from docx.shared import Cm, Pt, RGBColor
 
 AQUI = Path(__file__).resolve().parent
 TITULO = "Sistema Cloud ClickClack"
-SUBTITULO = "Arquitectura en la nube altamente disponible, resiliente y escalable sobre Azure"
 COLOR = RGBColor(0x1F, 0x3A, 0x5F)
 
 doc = Document()
@@ -218,12 +218,19 @@ def tabla(titulo_tabla, filas):
     t = doc.add_table(rows=len(celdas), cols=cols)
     t.style = "Table Grid"
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    # ancho de cada columna según su contenido (las columnas cortas, como "#", quedan angostas)
+    largos = [max(len(re.sub(r"[`*]", "", f[j])) if j < len(f) else 0 for f in celdas) for j in range(cols)]
+    pesos = [max(9, min(l, 90)) ** 0.7 for l in largos]
+    total = sum(pesos)
+    t.autofit = False
+    anchos = [Cm(16.4 * p / total) for p in pesos]
     for i, fila in enumerate(celdas):
         for j in range(cols):
             c = t.rows[i].cells[j]
             c.paragraphs[0].text = ""
             c.paragraphs[0].paragraph_format.space_after = Pt(1)
             texto = fila[j] if j < len(fila) else ""
+            c.width = anchos[j]
             en_linea(c.paragraphs[0], texto, tam=8.5, negrita=(i == 0))
             if i == 0:
                 sombrear(c, "DCE6F2")
@@ -281,51 +288,44 @@ def salto():
 
 
 # ---------------------------------------------------------------- portada e índice
-def portada():
-    for _ in range(5):
-        doc.add_paragraph()
+def cargar_portada(salida):
+    """Datos de la portada: <salida>/portada.json (local, fuera de git) o portada.ejemplo.json."""
+    for ruta in (salida / "portada.json", AQUI / "portada.ejemplo.json"):
+        if ruta.exists():
+            return json.loads(ruta.read_text(encoding="utf-8"))
+    raise SystemExit("Falta portada.json")
+
+
+def linea(texto, tam=12, negrita=False, color=None, antes=0, despues=6):
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("Servicios Cloud (100000S91T) · Sección 43639")
-    r.font.size = Pt(12)
-    r.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("Universidad Tecnológica del Perú")
-    r.font.size = Pt(12)
-    r.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
-    doc.add_paragraph()
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run(TITULO)
-    r.bold = True
-    r.font.size = Pt(34)
-    r.font.color.rgb = COLOR
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run(SUBTITULO)
-    r.font.size = Pt(15)
-    r.font.color.rgb = COLOR
-    doc.add_paragraph()
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("Informe técnico del proyecto final")
-    r.font.size = Pt(14)
-    doc.add_paragraph()
-    doc.add_paragraph()
-    for linea in (
-        "Equipo ClickClak: Cieza · Cuadros · Tapia · Villanueva",
-        "(completar nombres completos y códigos de los integrantes)",
-        "",
-        "Repositorio público:",
-        "https://github.com/MiguelCGonzales94/Sistema-Cloud-ClickClack",
-        "",
-        "Noviembre de 2026",
-    ):
-        p = doc.add_paragraph()
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = p.add_run(linea)
-        r.font.size = Pt(11)
+    p.paragraph_format.space_before = Pt(antes)
+    p.paragraph_format.space_after = Pt(despues)
+    r = p.add_run(texto)
+    r.font.size = Pt(tam)
+    r.bold = negrita
+    if color:
+        r.font.color.rgb = color
+    return p
+
+
+def portada(datos):
+    gris = RGBColor(0x55, 0x55, 0x55)
+    linea(datos["facultad"], 13, color=gris, antes=40, despues=2)
+    linea(datos["carrera"], 13, color=gris, despues=2)
+    linea(datos["curso"], 13, True, color=gris, despues=60)
+    linea(datos["titulo"], 34, True, COLOR, despues=10)
+    linea(datos["subtitulo"], 15, color=COLOR, despues=40)
+    linea(datos["entrega"], 14, True, despues=40)
+    linea("Autores", 12, True, despues=4)
+    for a in datos["autores"]:
+        linea(a, 11, despues=1)
+    linea("Docente", 12, True, antes=18, despues=4)
+    linea(datos["docente"], 11, despues=30)
+    linea(datos["lugar"], 11, despues=1)
+    linea(datos["fecha"], 11, despues=14)
+    if datos.get("repositorio"):
+        linea("Repositorio público: " + datos["repositorio"], 10, color=gris)
     salto()
     p = doc.add_paragraph()
     r = p.add_run("Contenido")
@@ -411,14 +411,15 @@ def procesar(ruta_md):
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) not in (2, 3):
         raise SystemExit(__doc__)
     salida = Path(sys.argv[1])
+    nombre = sys.argv[2] if len(sys.argv) == 3 else f"Informe tecnico - {TITULO}"
     salida.mkdir(parents=True, exist_ok=True)
     configurar_estilos()
     pie_de_pagina(doc.sections[0])
     doc.sections[0].different_first_page_header_footer = True
-    portada()
+    portada(cargar_portada(salida))
     capitulos = sorted(p for p in AQUI.glob("[0-9][0-9]-*.md"))
     if not capitulos:
         raise SystemExit("No hay capítulos NN-*.md")
@@ -426,7 +427,7 @@ def main():
         procesar(cap)
     doc.core_properties.title = f"{TITULO} — Informe técnico"
     doc.core_properties.author = "Equipo ClickClak"
-    destino = salida / f"Informe tecnico - {TITULO}.docx"
+    destino = salida / f"{nombre}.docx"
     doc.save(destino)
     print(f"DOCX: {destino}  (tablas: {n_tabla}, figuras: {n_figura}, capítulos: {len(capitulos)})")
 

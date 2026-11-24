@@ -1,6 +1,6 @@
-# 3. Monitoreo, métricas y escalabilidad
+# CAPÍTULO IV: MONITOREO, CAPACIDAD Y ESCALABILIDAD (FASE 2)
 
-## 3.1 Monitoreo y métricas
+## 4.1 Monitoreo y métricas
 
 El monitoreo vive en el **servidor testigo**, fuera de los dos nodos de aplicación. Esa separación es deliberada: si el monitoreo estuviera en un nodo y este cayera, la falla provocada en la demostración dejaría al equipo sin ver nada justo cuando más importa.
 
@@ -45,9 +45,9 @@ Hay **17 reglas** de alerta. Se agrupan por lo que protegen:
 | Seguridad | `PicoDeAutenticacionesFallidas` | Más de 20 respuestas 401 en 5 min |
 | | `PeticionesBloqueadasPorLimite` | Más de 10 respuestas 429 en 5 min |
 
-La alerta `PostgresCaido` fue la que definió el tiempo de detección en los ensayos de failover (capítulo 4): su duración de 20 s más el ciclo de recolección explican que la detección sea el 85–90 % del tiempo de recuperación.
+La alerta `PostgresCaido` fue la que definió el tiempo de detección en los ensayos de failover (capítulo V): su duración de 20 s más el ciclo de recolección explican que la detección sea el 85–90 % del tiempo de recuperación.
 
-## 3.2 Pruebas de carga
+## 4.2 Pruebas de carga
 
 Se midió con **k6** desde un contenedor en el testigo, dentro de la red virtual. La operación simulada es la de un colaborador autenticado: 45 % consulta de su sesión, 15 % sus incidencias, 15 % sus asignaciones y **25 % marcaciones (escritura con validación espacial e idempotencia)**. Cada petición verifica el token contra la lista de revocados guardada **en PostgreSQL**, de modo que la prueba ejercita el diseño sin estado. Se probaron **una instancia** (solo el backend de un nodo) y **dos** (ambos nodos). El criterio de aceptación es p95 inferior a 2 s y menos de 1 % de errores.
 
@@ -71,9 +71,9 @@ Se midió con **k6** desde un contenedor en el testigo, dentro de la red virtual
 5. **La sesión vale en ambas instancias**: el inicio de sesión se hizo en una y el token se usó en las dos.
 6. **Límite de peticiones (P5).** 80 peticiones por segundo desde una sola IP durante 20 s: 723 de 1 601 respondieron 429 (45 %) sin degradar el servicio. Como el límite es **por nodo**, con dos nodos el límite efectivo por IP se **duplica**; un límite compartido exigiría un almacén común.
 
-> **Cómo se declara el método.** Las duraciones fueron más cortas que las del plan original por el crédito y el tiempo disponibles (3 minutos en lugar de 10 en P1). Las pruebas se hicieron **contra los backends directamente** (puerto 8080 privado) y no contra el Nginx público, porque el proxy limita a 20 peticiones por segundo por IP y desde una sola IP se habría medido ese límite en lugar de la capacidad. Un primer intento de P3 se **descartó** por un error de método propio (cada usuario virtual generaba su propio conjunto "aleatorio" de identificadores) y se repitió con identificadores deterministas; ambos se conservan en el repositorio.
+> **Cómo se declara el método.** Las duraciones fueron cortas por el crédito y el tiempo disponibles (3 minutos en la prueba nominal, unos 4,5 en la de estrés): no se observó degradación a lo largo del tiempo porque no se probó un tiempo largo. Las pruebas se hicieron **contra los backends directamente** (puerto 8080 privado) y no contra el Nginx público, porque el proxy limita a 20 peticiones por segundo por IP y desde una sola IP se habría medido ese límite en lugar de la capacidad. Un primer intento de P3 se **descartó** por un error de método propio (cada usuario virtual generaba su propio conjunto "aleatorio" de identificadores) y se repitió con identificadores deterministas; ambos se conservan en el repositorio.
 
-## 3.3 Escalabilidad y elasticidad
+## 4.3 Escalabilidad y elasticidad
 
 @tabla Política de escalabilidad: qué se hizo y qué no
 | Dimensión | Estrategia | Evidencia o estado |
