@@ -2,7 +2,9 @@
 
 ## 8.1 Conclusiones
 
-El problema central era que ClickClak dependía de una sola máquina y de la atención manual. La arquitectura de tres servidores desplegada en Azure elimina esos puntos únicos de falla y lo demuestra con mediciones, no con diseño:
+El problema de negocio (sección 1.2.1) es la ineficiencia operativa y la vulnerabilidad de control en el registro de asistencia del personal deslocalizado; ClickClak es la respuesta, y este proyecto aseguró que esa respuesta no dependa de una sola máquina. **No se evaluó la eficacia funcional de ClickClak** (por ejemplo, su capacidad real ante el *GPS spoofing*): se verificó que la solución esté disponible, sea recuperable y se pueda observar.
+
+El problema técnico era que ClickClak dependía de una sola máquina y de la atención manual. La arquitectura de tres servidores desplegada en Azure elimina esos puntos únicos de falla y lo demuestra con mediciones, no con diseño:
 
 1. **Se eliminó la dependencia de un solo servidor** (OE5). Con dos nodos activos tras un balanceador, la caída de un backend se absorbe en unos 11 segundos con el 97,4 % de las sondas correctas. La caída abrupta de la base primaria se recupera en 30 a 36 segundos sin pérdida de escrituras confirmadas en cuatro ensayos reales, con aislamiento del nodo caído para evitar el *split-brain* y reincorporación con `pg_rewind`.
 2. **Los datos tienen una segunda línea de defensa** (OE5). La réplica no protege de un borrado accidental (la probamos: copia el error), pero el respaldo horario a Azure Blob sí: se restauró una tabla perdida y una base completa en menos de 10 segundos, con integridad comprobada por huella SHA-256.

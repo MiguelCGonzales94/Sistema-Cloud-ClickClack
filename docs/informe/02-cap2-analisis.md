@@ -2,7 +2,7 @@
 
 ## 2.1 Descripción del sistema base
 
-**Qué hace el sistema.** ClickClak registra la asistencia del personal de campo y gestiona sus incidencias (tardanzas, ausencias y permisos). El colaborador marca desde su teléfono; el sistema valida la marcación contra la ubicación de la sede o de la asignación y guarda un evento verificable. Supervisores y Recursos Humanos administran usuarios, sedes, turnos, asignaciones e incidencias desde un panel web. Como la marcación es la evidencia de la asistencia, **el servicio debe estar disponible durante la jornada y sus datos no pueden perderse**: de ahí la problemática que aborda este proyecto (capítulo I).
+La solución de negocio y las capacidades que atienden cada causa del problema se describen en la sección 1.4.1. Aquí se detalla su arquitectura técnica, que es el punto de partida del diseño en la nube.
 
 **Arquitectura de la aplicación.** El *back-end* es una API REST pura sobre Spring Boot, sin vistas del lado del servidor, organizada en capas: controladores (reciben la petición HTTP), servicios (reglas de negocio), repositorios (acceso a datos) y entidades. Dos clientes React consumen esa API: una **aplicación de campo (PWA)** con cola local sin conexión, y un **panel administrativo**. El punto de partida del proyecto era un despliegue en **una sola máquina virtual** con Docker Compose (sección 1.2).
 

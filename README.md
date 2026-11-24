@@ -1,6 +1,8 @@
 # ClickClak Cloud
 
-Proyecto final del curso **Servicios Cloud (100000S91T)**, UTP, sección 43639. Arquitectura en la nube **altamente disponible, resiliente y escalable** para **ClickClak**, un sistema de control de asistencia y gestión de incidencias para personal de campo, desplegada en Azure.
+**Problema.** El personal deslocalizado de Indra Perú registraba su asistencia y sus incidencias por canales semi-manuales: *«ineficiencia operativa y vulnerabilidad de control debido a la falta de un sistema centralizado, seguro e interactivo para el registro de asistencia, puntualidad y gestión de incidencias laborales»*.
+
+**Solución.** **ClickClak**, un sistema de control de asistencia y gestión de incidencias con marcación georreferenciada y trabajo sin conexión, y —objeto de este repositorio— una arquitectura en Azure **altamente disponible, resiliente y escalable** que lo mantiene disponible, recuperable y observable. Proyecto final del curso **Servicios Cloud (100000S91T)**, UTP, sección 43639.
 
 ## Estructura
 
