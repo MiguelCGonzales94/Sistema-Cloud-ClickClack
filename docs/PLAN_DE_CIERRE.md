@@ -71,6 +71,8 @@ Formato: draw.io (editable) + PNG exportado en `docs/diagramas/`. **Puerta:** lo
 
 ### Bloque D — Informe técnico PDF por fases (≈16 h) · sin nube
 
+**Avance (2026-11-24):** el informe está escrito (7 capítulos y anexos, 34 páginas, 34 tablas y 4 figuras) en `docs/informe/` y generado como DOCX y PDF en `Sistema Cloud ClickClack\Informe\`. Cubre D1 a D6, la tabla de patrones (B1) y la política de escalabilidad (B2). **Pendiente:** nombres completos y códigos en la portada, capturas de Grafana y del portal de Azure (la regla es no escribir contraseñas, así que las toma una persona del equipo), y la revisión cruzada de otro integrante contra la rúbrica.
+
 Se **reescribe con enfoque cloud**; no se copia el APF2 (riesgo académico ya identificado).
 
 | # | Capítulo | Se apoya en |
