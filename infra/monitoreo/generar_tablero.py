@@ -70,7 +70,7 @@ y += 4
 paneles.append(serie("Peticiones por segundo (por nodo)",
                      [('sum by (nodo) (rate(http_server_requests_seconds_count{job="backend"}[1m]))', "{{nodo}}")],
                      0, y, unidad="reqps"))
-paneles.append(serie("Latencia p95 (s) — límite RNF03: 2 s",
+paneles.append(serie("Latencia p95 (s) — criterio de aceptación: 2 s",
                      [('histogram_quantile(0.95, sum by (le, nodo) (rate(http_server_requests_seconds_bucket{job="backend"}[1m])))', "p95 {{nodo}}")],
                      8, y, unidad="s"))
 paneles.append(serie("Errores 5xx y 401 por segundo",

@@ -689,7 +689,7 @@
     {
       "id": 12,
       "type": "timeseries",
-      "title": "Latencia p95 (s) — límite RNF03: 2 s",
+      "title": "Latencia p95 (s) — criterio de aceptación: 2 s",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"

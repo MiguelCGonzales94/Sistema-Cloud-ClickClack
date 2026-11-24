@@ -110,7 +110,7 @@ Probado en el asistente del portal con la cuenta UTP. Se usó "Revisar y crear" 
 | Políticas de la suscripción | Solo una asignada: *Allowed resource deployment regions* (limita regiones, no tipos de recurso) |
 | Load Balancer: SKU Estándar, tipo Pública, nivel Regional, Chile Central | El asistente lo acepta (nombre válido); el SKU Basic ya no se ofrece |
 | Zonas de disponibilidad | Existen en Chile Central (Zona 1 seleccionable) |
-| `vm-clickclak` (VM 1) | **Sin zona de disponibilidad ni conjunto de disponibilidad**; subred `vm-clickclakSubnet`, IP privada 10.0.0.4; etiquetas `proyecto=clickclak`, `curso=integrador2` |
+| `vm-clickclak` (VM 1) | **Sin zona de disponibilidad ni conjunto de disponibilidad**; subred `vm-clickclakSubnet`, IP privada 10.0.0.4; etiqueta `proyecto=clickclak` y una etiqueta `curso` heredada del clonado (pendiente de actualizar) |
 
 **Pendiente:** la validación completa del Load Balancer (requiere IP de front-end, grupo de back-end con la VM 2 y reglas); se hará al construirlo.
 
@@ -118,7 +118,7 @@ Probado en el asistente del portal con la cuenta UTP. Se usó "Revisar y crear" 
 
 - La VM 1 no está en una zona y no se puede mover a una: para repartir los nodos en zonas distintas habría que recrearla desde un snapshot de su propio disco (Zona 1) y crear la VM 2 en la Zona 2. Si no, ambas quedan sin zona (solo redundancia por máquina).
 - La VNet existente usa 10.0.0.0/16 (la VM 1 tiene 10.0.0.4), no el 10.10.0.0/16 propuesto arriba: las subredes nuevas deben salir de ese rango.
-- Las etiquetas `curso=integrador2` deben cambiarse en los recursos nuevos (`curso=servicios-cloud`) para separar los costos de cada curso.
+- La etiqueta `curso` heredada del clonado debe actualizarse a `servicios-cloud` en los recursos para identificar los costos de este proyecto.
 
 ## 5.3 Estado real: Etapa 1, paso 1 ejecutado (2026-11-22)
 

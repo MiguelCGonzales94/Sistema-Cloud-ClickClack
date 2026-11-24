@@ -84,7 +84,7 @@ export function operacionTipica(token) {
   else marcar(token, base);
 }
 
-// Criterio de aceptación del plan de capacidad (RNF03): p95 < 2 s y menos de 1 % de errores.
+// Criterio de aceptación del proyecto: p95 < 2 s y menos de 1 % de errores.
 export const UMBRALES = {
   http_req_duration: ['p(95)<2000'],
   http_req_failed: ['rate<0.01'],

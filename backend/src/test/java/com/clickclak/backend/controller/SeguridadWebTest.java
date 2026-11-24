@@ -39,7 +39,7 @@ import com.clickclak.backend.security.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Controles de seguridad web de la API (cap. VI 6.3, CLICKCLACK-57): respuestas de error que no
+ * Controles de seguridad web de la API: respuestas de error que no
  * filtran detalles internos, bloqueo por fuerza bruta, CORS restringido, mínimo privilegio en
  * los catálogos y validación de las entradas. Contra la base real, como el resto de los
  * controladores.
