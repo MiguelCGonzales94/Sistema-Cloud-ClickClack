@@ -1,0 +1,7 @@
+ultima-restauracion.json y escenario-borrado-accidental.txt: escenario de borrado accidental. El resultado
+  "conteos: DIFERENTES" es el esperado: el respaldo restaurado trae la tabla _prueba_drp (1000 filas) que la
+  primaria ya habia perdido; esa es la recuperacion que se queria demostrar.
+restauracion-con-conteos-iguales.json: salida real de restaurar.sh sobre un respaldo reciente
+  (2026-11-24 00:00 UTC, generado con respaldar.sh) en una base descartable, comparada con produccion: 14 tablas, conteos IGUALES.
+Nota: los scripts respaldar.sh y restaurar.sh emitian numeros sin cero inicial (".09") porque bc no lo escribe,
+  lo que no es JSON valido. Se corrigio el 2026-11-24 y se normalizaron estos archivos (solo el formato numerico).

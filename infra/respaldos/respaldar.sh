@@ -56,5 +56,5 @@ t_fin=$(date +%s.%N)
 rm -f "$ARCHIVO" "$ARCHIVO.sha256"
 printf '{"blob":"%s/%s","bytes":%s,"dump_s":%s,"subida_s":%s,"total_s":%s,"fecha":"%s"}\n' \
     "$CONTENEDOR" "$BLOB" "$TAM" \
-    "$(echo "$t_dump - $t_ini" | bc)" "$(echo "$t_fin - $t_dump" | bc)" "$(echo "$t_fin - $t_ini" | bc)" "$TS" \
+    "$(echo "$t_dump - $t_ini" | bc | sed 's/^\./0./')" "$(echo "$t_fin - $t_dump" | bc | sed 's/^\./0./')" "$(echo "$t_fin - $t_ini" | bc | sed 's/^\./0./')" "$TS" \
     | tee -a "$DIR/respaldos.log"

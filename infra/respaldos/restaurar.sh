@@ -75,5 +75,5 @@ echo "Tablas comparadas: $TABLAS | conteos restaurada vs producción: $COMPARACI
 
 rm -f "$TMP/restaurar.dump" "$TMP/restaurar.dump.sha256"
 printf '{"blob":"%s","descarga_s":%s,"restauracion_s":%s,"total_s":%s,"tablas":%s,"conteos":"%s","postgis":"%s"}\n' \
-    "$BLOB" "$(echo "$t1 - $t0" | bc)" "$(echo "$t3 - $t2" | bc)" "$(echo "$t3 - $t0" | bc)" "$TABLAS" "$COMPARACION" "${POSTGIS:-}" \
+    "$BLOB" "$(echo "$t1 - $t0" | bc | sed 's/^\./0./')" "$(echo "$t3 - $t2" | bc | sed 's/^\./0./')" "$(echo "$t3 - $t0" | bc | sed 's/^\./0./')" "$TABLAS" "$COMPARACION" "${POSTGIS:-}" \
     | tee "$DIR/ultima-restauracion.json"
