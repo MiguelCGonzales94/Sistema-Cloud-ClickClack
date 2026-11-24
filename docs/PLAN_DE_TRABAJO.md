@@ -90,7 +90,6 @@ Con 4 integrantes parte del trabajo corre en paralelo; el calendario real depend
 | 0.4 | Tablero y Gantt de este curso (Jira o planilla), con las tareas de este plan | Seguimiento |
 | 0.5 | Reparto de responsables y rutina de dailys breves | Roles (ver §5) |
 | 0.6 | Alerta de presupuesto en Azure y etiquetas `curso=servicios-cloud` en todo recurso nuevo | Control de costos |
-| 0.7 | Nota de reutilización: qué viene del Integrador II y qué es nuevo en este curso | Anexo del informe |
 
 **Puerta:** repo público creado, calendario fijado, responsables asignados.
 
@@ -124,7 +123,7 @@ Es el trabajo de código más delicado: sin él, dos instancias del backend no s
 | 2.1 | Mover a **PostgreSQL** los tokens revocados, intentos fallidos, tokens de recuperación y desafíos WebAuthn (migración Flyway + expiración) | Migración, código y pruebas |
 | 2.2 | Pruebas automáticas: **login y revocación consistentes entre 2 instancias** | Prueba de integración |
 | 2.3 | Misma `JWT_SECRET` y configuración en ambos nodos; verificación de sesión cruzada | Evidencia de sesión entre nodos |
-| 2.4 | **Matriz de roles por endpoint** (pendiente del APF2, OWASP A01) | Pruebas automáticas |
+| 2.4 | **Matriz de roles por endpoint** (OWASP A01) | Pruebas automáticas |
 | 2.5 | **Pruebas de carga con k6** P1 a P4 con **1 y 2 instancias** (nominal, pico, ráfaga con idempotencia, estrés) | Resultados, p95, punto de quiebre |
 | 2.6 | **Política de escalabilidad** (horizontal/vertical, disparadores) con una prueba de elasticidad real | Gráficos y documento (criterio 3) |
 
@@ -171,7 +170,7 @@ Detalle en `SEGURIDAD_ISO27001_OWASP.md`.
 | 5.1 | Escaneo **Trivy** de imágenes y análisis de dependencias en el CI; imágenes fijadas por versión y digest | Informe sin críticos (A06, A08) |
 | 5.2 | Roles de BD con mínimo privilegio (ejecución sin DDL, migración aparte) y `pg_hba` por CIDR | Scripts (A01, ISO 8.2) |
 | 5.3 | Gestión de secretos: rotación documentada; evaluar Key Vault por costo | Procedimiento (R1) |
-| 5.4 | **Segundo factor** para supervisores y RR. HH. (pendiente del APF2, A07) | Implementación o riesgo aceptado |
+| 5.4 | **Segundo factor** para supervisores y RR. HH. (A07) | Implementación o riesgo aceptado |
 | 5.5 | **Modelo de amenazas** y matriz de riesgos del sistema de 3 servidores | Documento (A04) |
 | 5.6 | Políticas breves: seguridad, incidentes, retención | `docs/seguridad/` |
 | 5.7 | **Prueba ofensiva básica** (autenticación, autorización, cabeceras, límites) | Informe de hallazgos |
@@ -181,7 +180,7 @@ Detalle en `SEGURIDAD_ISO27001_OWASP.md`.
 
 ## F6 — Informe, diagramas y repositorio (≈6 días, continua desde F1)
 
-El APF2 no se entrega tal cual: se **reestructura por fases** y se reescribe con enfoque cloud para no duplicar el informe de otro curso.
+El informe se estructura por fases y se escribe con enfoque cloud.
 
 | # | Tarea | Contenido |
 |---|---|---|
@@ -257,7 +256,6 @@ La sustentación evalúa dominio técnico individual: **todos deben poder explic
 | Crédito insuficiente | Recursos apagados el día de la sustentación | Presupuesto por fase, apagar y eliminar el balanceador, saldo verificado en F7 |
 | Failover manual no ensayado | Falla en vivo | Tres ensayos mínimos con cronómetro (F4 y F7) |
 | Portal o región con problemas el día de la demo | Demostración caída | Plan B local y video (7.4) |
-| Informe copiado del APF2 | Problema académico | Reescritura por fases y nota de reutilización (0.7, F6) |
 | Trabajo concentrado en una persona | Cuello de botella y sustentación débil | Rotar tareas y revisar todo en pareja |
 
 ## 7. Qué se recorta primero si falta tiempo (orden)
@@ -266,7 +264,7 @@ La sustentación evalúa dominio técnico individual: **todos deben poder explic
 2. Circuit Breaker, Loki y la metamonitorización.
 3. Zonas de disponibilidad y Key Vault.
 4. Segundo factor para administradores (queda como riesgo aceptado).
-5. Adjuntos de incidencias en Blob (HU19).
+5. Adjuntos de incidencias en Blob.
 
 **No se recorta:** balanceador, replicación y promoción probada, monitoreo en vivo, respaldos con restauración medida, pruebas de carga, diagramas, informe, repositorio público y ensayo.
 

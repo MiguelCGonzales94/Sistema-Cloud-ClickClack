@@ -76,10 +76,10 @@ Dentro de `vm-app`, Docker usa dos redes: `publica` (Nginx) y `privada` con `int
 | Riesgo | Detalle | Acción |
 |---|---|---|
 | **Salida a Internet de `vm-db`** | Sin IP pública, Azure puede no darle acceso de salida predeterminado en subredes nuevas *(por verificar)*; `vm-db` necesita bajar paquetes e imágenes Docker | Aprovisionarla con IP pública temporal o preparar las imágenes desde `vm-app` (`docker save`/`load`); evitar NAT Gateway por costo |
-| **Crédito Azure** | El APF2 ya preveía ~67 USD para una VM hasta el 13-dic | Consultar saldo real, cotizar `vm-db` y encender ambas solo para pruebas y sustentación |
+| **Crédito Azure** | Cada VM adicional consume crédito de los USD 79 disponibles | Consultar saldo real, cotizar `vm-db` y encender ambas solo para pruebas y sustentación |
 | **Migración de la primaria** | Hoy la primaria está en `vm-app` | Los datos son de prueba: recrear la base en `vm-db` y reconstruir el standby |
 | **Apagado nocturno** | El script desasigna `vm-app` a las 23:00 | Extenderlo a `vm-db` y añadir encendido ordenado (primero la base) |
-| **Latencia entre VM** | Misma región, no debería afectar RNF03 (< 2 s) | Medirla en las pruebas de carga |
+| **Latencia entre VM** | Misma región, no debería afectar el criterio de aceptación (p95 < 2 s) | Medirla en las pruebas de carga |
 
 ## 5.1 Validación en el portal de Azure (2026-11-22, solo lectura)
 

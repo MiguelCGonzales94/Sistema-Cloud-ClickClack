@@ -8,7 +8,7 @@ Topología base: 3 servidores — nodo 1 y nodo 2 idénticos (aplicación y base
 - **Qué es:** un proyecto académico que **adopta y alinea** sus controles con ISO/IEC 27001:2022 y OWASP Top 10. **No es una certificación**, ni existe auditoría externa. En el informe se debe decir "alineado con", nunca "cumple" ni "certificado".
 - **Alcance del SGSI aplicado:** la plataforma ClickClak Cloud en Azure (3 VM, red virtual, balanceador, almacenamiento de respaldos), su código, su pipeline de entrega y los datos que procesa.
 - **Fuera de alcance:** las instalaciones físicas y la infraestructura base de Azure (responsabilidad compartida: el proveedor gestiona el centro de datos; el equipo gestiona lo que despliega sobre él). Se declara así en la Declaración de Aplicabilidad.
-- **Edición de OWASP:** se mantiene la **2021** por consistencia con el APF2. *Por verificar:* si procede adoptar una edición más reciente.
+- **Edición de OWASP:** se usa la **2021**. *Por verificar:* si procede adoptar una edición más reciente.
 - **Datos personales:** el sistema trata asistencia y **ubicación** de personas. En Perú aplica la Ley N.º 29733 de Protección de Datos Personales. *Por verificar con la docente o asesoría legal:* obligaciones concretas (consentimiento, registro del banco de datos, versión vigente del reglamento). No se asume cumplimiento.
 
 ## 2. Activos y clasificación (A.5.9, A.5.12)
@@ -29,25 +29,25 @@ Topología base: 3 servidores — nodo 1 y nodo 2 idénticos (aplicación y base
 |---|---|---|---|
 | R1 | Copiar certificado, `JWT_SECRET` y `.env` entre nodos amplía la superficie de secretos | Secretos por nodo con permisos 600; rotación documentada; plan para llevar secretos a Azure Key Vault (*por evaluar costo*) | Nuevo |
 | R2 | Split-brain en la base de datos | Un solo escritor, fencing, quórum con el testigo, `targetServerType=primary` | Nuevo |
-| R3 | Tráfico de replicación y aplicación → BD sin cifrar (riesgo aceptado en el APF2) | TLS interno obligatorio y SCRAM | **Implementado** (TLS 1.3 `verify-full`; `pg_hba` rechaza lo no cifrado; ver `ENDURECIMIENTO_F5.md`) |
+| R3 | Tráfico de replicación y aplicación → BD sin cifrar (estado inicial del sistema) | TLS interno obligatorio y SCRAM | **Implementado** (TLS 1.3 `verify-full`; `pg_hba` rechaza lo no cifrado; ver `ENDURECIMIENTO_F5.md`) |
 | R4 | Panel de Grafana/Prometheus expuesto | Sin IP pública; acceso por túnel SSH o NSG restringido a IP del equipo | Nuevo |
 | R5 | Respaldos con credenciales de almacenamiento en un servidor | Identidad administrada de la VM con permiso mínimo sobre un contenedor Blob | **Implementado** (sin claves ni SAS en las VM) |
-| R6 | Acceso SSH abierto a cualquier IP (riesgo del APF2) | NSG: 22 solo desde la IP del equipo; llave sin contraseña; `fail2ban` | **Implementado** (solo la IP del equipo; los demás integrantes deben añadir la suya) |
+| R6 | Acceso SSH abierto a cualquier IP (estado inicial del sistema) | NSG: 22 solo desde la IP del equipo; llave sin contraseña; `fail2ban` | **Implementado** (solo la IP del equipo; los demás integrantes deben añadir la suya) |
 | R7 | Estado en memoria del backend impide varias instancias (y revocar tokens de forma consistente) | Mover tokens revocados, intentos fallidos y desafíos WebAuthn a PostgreSQL | Nuevo |
 | R8 | Restauración nunca probada | Prueba periódica de restauración con RTO/RPO medidos | **Implementado** (prueba semanal en cron; medida: 9,4 s) |
 | R9 | Cadena de suministro: imágenes y dependencias | Imágenes fijadas por versión y digest, Trivy y análisis de dependencias en el CI | **Parcial**: Trivy en CI en cada cambio y semanalmente (backend 51→4 aceptados con caducidad, frontends y proxy 0); falta fijar por digest las imágenes base de los Dockerfile |
-| R10 | Bitácoras sin alertas de seguridad (A09 parcial en el APF2) | Alertmanager en el testigo: 401/429 repetidos, cuentas bloqueadas, accesos fallidos a la BD | Nuevo |
+| R10 | Bitácoras sin alertas de seguridad (A09 parcial al iniciar) | Alertmanager en el testigo: 401/429 repetidos, cuentas bloqueadas, accesos fallidos a la BD | Nuevo |
 
 ## 4. Declaración de aplicabilidad resumida (ISO/IEC 27001:2022, Anexo A)
 
-Estados: **Existente** (ya evidenciado en el APF2), **Nuevo** (a implementar aquí), **Azure** (responsabilidad del proveedor), **N/A**. Etapas: E1 a E5 según `DECISION_TOPOLOGIA.md` §6.
+Estados: **Existente** (ya estaba en el código al iniciar; no se volvió a auditar), **Nuevo** (a implementar aquí), **Azure** (responsabilidad del proveedor), **N/A**. Etapas: E1 a E5 según `DECISION_TOPOLOGIA.md` §6.
 
 ### A.5 Controles organizacionales
 
 | Control | Aplicación en el proyecto | Evidencia prevista | Estado |
 |---|---|---|---|
 | 5.1 Políticas de seguridad | Política breve de seguridad y de uso de secretos del proyecto | `docs/seguridad/politica.md` | Nuevo (E1) |
-| 5.2 Roles y responsabilidades | Scrum Master / PO / desarrolladores con responsabilidades de seguridad por componente | Matriz RACI en el informe | Existente (APF2 8.2.5) + Nuevo |
+| 5.2 Roles y responsabilidades | Scrum Master / PO / desarrolladores con responsabilidades de seguridad por componente | Reparto de responsables del plan de cierre | Parcial (sin matriz RACI formal) |
 | 5.3 Separación de funciones | Nadie revisa lo que él mismo registra (C13); revisión por pares de PR | C13, regla de PR | Existente |
 | 5.8 Seguridad en la gestión de proyectos | Riesgos de seguridad en el backlog y revisión por sprint | Tablero Jira | Existente |
 | 5.9 Inventario de activos | Tabla de §2 más inventario de recursos Azure por etiquetas (`curso=servicios-cloud`) | Exportación de recursos | Nuevo (E1) |
@@ -72,14 +72,14 @@ Estados: **Existente** (ya evidenciado en el APF2), **Nuevo** (a implementar aqu
 
 | Control | Aplicación | Evidencia prevista | Estado |
 |---|---|---|---|
-| 8.1 Dispositivos de usuario | WebAuthn delega la biometría al dispositivo; no se almacenan datos biométricos | APF2 6.3.1 | Existente |
+| 8.1 Dispositivos de usuario | WebAuthn delega la biometría al dispositivo; no se almacenan datos biométricos | Código de la aplicación (WebAuthn) | Existente (no re-auditado) |
 | 8.2 Privilegios de acceso | Rol de BD de ejecución sin superusuario ni DDL; rol de migración separado; RBAC Azure con mínimo privilegio | Scripts de roles; asignaciones RBAC | Existente + Nuevo (E1) |
 | 8.3 Restricción de acceso a la información | Mínimo privilegio en listados (C12); `pg_hba` por CIDR | Pruebas por rol | Existente + Nuevo |
 | 8.4 Acceso al código fuente | Rama principal protegida, revisión por pares | Configuración del repo | Existente |
-| 8.5 Autenticación segura | WebAuthn, bcrypt, bloqueo; segundo factor para administradores (pendiente del APF2) | C8–C11 | Existente + Pendiente |
+| 8.5 Autenticación segura | WebAuthn, bcrypt, bloqueo; segundo factor para administradores (pendiente) | Código de la aplicación | Existente (no re-auditado) + Pendiente |
 | 8.6 Gestión de capacidad | Plan de capacidad y pruebas de carga P1–P4 con 1 y 2 instancias | Resultados k6 | Existente (plan) + Nuevo (E2) |
 | 8.7 Protección contra malware | Imágenes oficiales, escaneo Trivy en el CI, sin ejecución de software no versionado | Informe de Trivy | Nuevo (E1) |
-| 8.8 Vulnerabilidades técnicas | Análisis de dependencias (react-router migrado; backend analizado) y escaneo continuo | CLICKCLACK-68/69; Trivy (`ENDURECIMIENTO_F5.md`) | Existente + **Implementado** (Spring Boot 3.5.14; escaneo aún manual) |
+| 8.8 Vulnerabilidades técnicas | Análisis de dependencias (react-router migrado; backend analizado) y escaneo continuo | Trivy en CI y semanal (`.github/workflows/seguridad.yml`; `ENDURECIMIENTO_F5.md`) | **Implementado** (Spring Boot 3.5.14; excepciones con caducidad) |
 | 8.9 Gestión de configuración | Infraestructura como código (Bicep) y compose versionados; línea base de configuración | Repositorio | Nuevo (E1) |
 | 8.10 Eliminación de información | Retención de bitácoras y respaldos con caducidad; borrado de los datos de prueba al cerrar | Política de retención | Nuevo (E4) |
 | 8.12 Prevención de fuga de datos | Sin datos reales en pruebas; respaldos en contenedor privado, sin acceso público | Configuración Blob | Nuevo (E4) |
@@ -93,28 +93,28 @@ Estados: **Existente** (ya evidenciado en el APF2), **Nuevo** (a implementar aqu
 | 8.22 Segregación de redes | Subredes y redes Docker `publica`/`privada` (interna) | Diagrama y configuración | Nuevo (E1) |
 | 8.23 Filtrado web | Salida a Internet restringida desde los nodos de datos | NSG de salida | Nuevo (E1) |
 | 8.24 Criptografía | TLS externo e interno, SCRAM, discos y Blob cifrados, respaldos cifrados; gestión y rotación de claves | C1, C4, C22 + TLS interno `verify-full` | **Implementado** (falta renovación automática de certificados) |
-| 8.25 Ciclo de vida de desarrollo seguro | CI, revisión por pares, pruebas, etiquetas de versión | APF2 cap. IX | Existente |
-| 8.26 Requisitos de seguridad de las aplicaciones | Controles C1–C22 como requisitos verificables | APF2 6.3.3 | Existente |
+| 8.25 Ciclo de vida de desarrollo seguro | Integración continua con pruebas, auditoría de dependencias y Trivy | `.github/workflows/` | Parcial (sin revisión obligatoria por pares) |
+| 8.26 Requisitos de seguridad de las aplicaciones | Controles de seguridad del código (autenticación, bloqueo por intentos, límites de peticiones) | Código y pruebas automáticas | Existente (no re-auditado) |
 | 8.27 Arquitectura segura | Capas, mínima superficie, un solo escritor, quórum | Diagramas lógico y físico | Existente + Nuevo |
 | 8.28 Codificación segura | Consultas parametrizadas, validación de entradas (C14), errores uniformes (C15) | Pruebas | Existente |
-| 8.29 Pruebas de seguridad | Prueba de humo de 52 comprobaciones, pruebas de roles, escaneo de imágenes; **prueba ofensiva básica** (pendiente del APF2) | Resultados | Existente + Nuevo (E5) |
+| 8.29 Pruebas de seguridad | Prueba de humo de 66 a 69 comprobaciones, escaneo de imágenes; **prueba ofensiva básica** y matriz de roles (pendientes) | Resultados | Parcial |
 | 8.31 Separación de entornos | Desarrollo local, pruebas y producción diferenciados; sin cuenta de desarrollo en producción (C20) | Configuración | Existente |
-| 8.32 Gestión de cambios | Proceso del APF2 8.2 (tipos, riesgo, reversión); cambios de infraestructura vía IaC y PR | Registro de cambios | Existente |
+| 8.32 Gestión de cambios | Cambios de infraestructura versionados en git y verificados por integración continua | Historial de git | Parcial (sin proceso formal de cambios) |
 | 8.33 Información de prueba | Datos sintéticos en pruebas | Scripts de carga | Existente |
 | 8.34 Protección durante pruebas de auditoría | Pruebas de carga y de falla solo en la ventana acordada | Plan de pruebas | Nuevo |
 
 ## 5. OWASP Top 10 (2021) frente a la arquitectura de 3 servidores
 
-La columna "APF2" es el estado declarado en el informe de Integrador II; "Aquí" es lo que añade este proyecto.
+La columna "Al iniciar" es el estado del código al comenzar el proyecto, tal como se revisó (los controles marcados como existentes no se volvieron a auditar); "Aquí" es lo que añade este proyecto.
 
-| Categoría | APF2 | Aquí (controles nuevos o reforzados) | Etapa |
+| Categoría | Al iniciar | Aquí (controles nuevos o reforzados) | Etapa |
 |---|---|---|---|
-| **A01 Control de acceso roto** | Implementado (C12, C13, C7) | Matriz automática de roles por endpoint (pendiente del APF2); roles de BD con mínimo privilegio; NSG que limita 5432 y 22 | E1–E2 |
+| **A01 Control de acceso roto** | Implementado en el código (no re-auditado) | Matriz automática de roles por endpoint (pendiente); roles de BD con mínimo privilegio; NSG que limita 5432 y 22 | E1–E2 |
 | **A02 Fallos criptográficos** | Parcial (sin TLS interno) → **Implementado aquí** | **TLS entre aplicación → BD y primaria → réplica**; SCRAM; respaldos cifrados; secretos por nodo con rotación documentada | E1, E4 |
-| **A03 Inyección** | Implementado | Mantener parámetros nombrados; el rol de ejecución no puede usar `COPY PROGRAM`; sin extensiones como `dblink` | E1 |
+| **A03 Inyección** | Implementado en el código (no re-auditado) | Mantener parámetros nombrados; el rol de ejecución no puede usar `COPY PROGRAM`; sin extensiones como `dblink` | E1 |
 | **A04 Diseño inseguro** | Parcial (sin modelo de amenazas) | **Modelo de amenazas** del sistema de 3 servidores (R1–R10); fencing y quórum; RPO/RTO definidos y medidos | E1, E4 |
-| **A05 Configuración incorrecta** | Implementado | Sin IP ni puerto público para la BD y el testigo; NSG de denegación por defecto; contenedores no root con `HEALTHCHECK`; base de configuración en IaC; `pg_hba` por CIDR | E1 |
-| **A06 Componentes vulnerables** | Parcial → atendido (CLICKCLACK-68/69) | Trivy y análisis de dependencias en cada PR; imágenes fijadas por versión y digest; plan de actualización | E1 |
+| **A05 Configuración incorrecta** | Parcial (VM única, SSH abierto) | Sin IP ni puerto público para la BD y el testigo; NSG de denegación por defecto; contenedores no root con `HEALTHCHECK`; base de configuración en IaC; `pg_hba` por CIDR | E1 |
+| **A06 Componentes vulnerables** | Parcial | Trivy y análisis de dependencias en cada PR; imágenes fijadas por versión y digest; plan de actualización | E1 |
 | **A07 Fallos de autenticación** | Parcial | Segundo factor para supervisores y RR. HH. (pendiente); contraseñas de BD generadas y rotadas; SSH solo con llave; credenciales de respaldo por identidad administrada | E2, E4 |
 | **A08 Integridad de software y datos** | Parcial (sin firma de imágenes) | Imágenes versionadas desde GHCR; verificación de firma o digest; `data_checksums`; `pg_verifybackup` en cada respaldo; IaC revisada por PR | E1, E4 |
 | **A09 Registro y monitoreo** | Parcial (sin alertas) | **Alertmanager en el testigo**: 401/429 repetidos, cuentas bloqueadas, retraso o corte de réplica, accesos fallidos a la BD; `log_connections`/`log_disconnections` | E3 |

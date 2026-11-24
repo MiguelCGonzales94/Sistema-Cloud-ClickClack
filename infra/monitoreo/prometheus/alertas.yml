@@ -1,5 +1,5 @@
 # Alertas del proyecto: disponibilidad, capacidad, replicación y seguridad (OWASP A09; ISO 27001 8.16).
-# Los umbrales son los del plan de capacidad (APF2, tabla 14) y se ajustan con las pruebas de carga.
+# Los umbrales parten de los criterios de capacidad del proyecto y se ajustan con las pruebas de carga.
 groups:
   - name: disponibilidad
     rules:
@@ -66,7 +66,7 @@ groups:
         for: 5m
         labels: { severidad: media }
         annotations:
-          resumen: "p95 de {{ $labels.nodo }} supera 1 s (el límite RNF03 es 2 s)"
+          resumen: "p95 de {{ $labels.nodo }} supera 1 s (el criterio de aceptación es 2 s)"
 
       - alert: ErroresServidorAltos
         expr: sum by (nodo) (rate(http_server_requests_seconds_count{job="backend",status=~"5.."}[5m])) > 0.2

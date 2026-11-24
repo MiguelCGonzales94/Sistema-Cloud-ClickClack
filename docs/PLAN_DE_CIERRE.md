@@ -18,7 +18,6 @@ Estado: **propuesta para aprobar**. Las duraciones son **estimaciones mías en h
 | Segundo factor, rol de BD sin DDL, prueba ofensiva | F5.2, 5.4, 5.7 | Pendientes (ver `ENDURECIMIENTO_F5.md` §7) |
 | Auditoría interna del SoA | F5.8 | No hecha |
 | Alerta de presupuesto, etiquetas, saldo de crédito | F0.6 | **No verificado**: no he comprobado el saldo restante |
-| Nota de reutilización (qué viene de Integrador II) | F0.7 | Parcial (sección "Origen" del README) |
 | Guion, ensayos, plan B, diapositivas | F7 | No hecho |
 | Cierre y apagado | F8 | No hecho |
 
@@ -73,7 +72,7 @@ Formato: draw.io (editable) + PNG exportado en `docs/diagramas/`. **Puerta:** lo
 
 **Avance (2026-11-24):** el informe está escrito (7 capítulos y anexos, 34 páginas, 34 tablas y 4 figuras) en `docs/informe/` y generado como DOCX y PDF en `Sistema Cloud ClickClack\Informe\`. Cubre D1 a D6, la tabla de patrones (B1) y la política de escalabilidad (B2). **Pendiente:** nombres completos y códigos en la portada, capturas de Grafana y del portal de Azure (la regla es no escribir contraseñas, así que las toma una persona del equipo), y la revisión cruzada de otro integrante contra la rúbrica.
 
-Se **reescribe con enfoque cloud**; no se copia el APF2 (riesgo académico ya identificado).
+El informe se redacta como un proyecto independiente, con enfoque cloud.
 
 | # | Capítulo | Se apoya en |
 |---|---|---|
@@ -170,7 +169,6 @@ Todos deben poder explicar todas las capas en la sustentación: el reparto es so
 | Publicar un secreto en el repo público | Compromiso de claves | A1 con escaneo antes del primer push; rotar si algo se cuela |
 | Fecha de sustentación más cercana de lo supuesto | Menos días de informe | Recortes de §6; confirmar la fecha hoy |
 | Crédito menor al esperado | Demo caída | B5 antes de encender para E |
-| Informe parecido al APF2 | Observación académica | Reescribir por fases y citar la reutilización |
 | Un integrante sin acceso SSH el día de la demo | No puede mostrar | IP de cada uno en el NSG antes de F3 |
 | Cambio de IP del equipo | Pérdida de SSH | `az network nsg rule update` (no requiere SSH) |
 

@@ -69,7 +69,7 @@ Consecuencias:
 | ¿Se puede "reconectar" P a R directamente? | **No.** Las historias divergieron; PostgreSQL lo rechaza por incompatibilidad de timeline |
 | Si P y R reciben escrituras a la vez | **Split-brain:** dos verdades irreconciliables. Es el peor caso |
 
-**Riesgo concreto en este proyecto:** el compose usa `restart: unless-stopped`, y el APF2 ya advierte que desplegar de nuevo "levantaría la primaria anterior". Al encender la VM 1 su PostgreSQL arrancaría como primaria. Hay que **cercar** (fencing) el nodo viejo antes de encenderlo.
+**Riesgo concreto en este proyecto:** el compose usa `restart: unless-stopped`, y desplegar de nuevo "levantaría la primaria anterior". Al encender la VM 1 su PostgreSQL arrancaría como primaria. Hay que **cercar** (fencing) el nodo viejo antes de encenderlo.
 
 ### Procedimiento recomendado tras un failover
 
@@ -103,15 +103,15 @@ La base dedicada sola **no resuelve** la tolerancia a fallos; resuelve la consis
 
 ## 5. OWASP Top 10 (2021) aplicado al servidor de datos
 
-El APF2 ya usa la edición 2021, se mantiene por consistencia.
+Se usa la edición 2021.
 
 | Riesgo | Control para la base y su servidor |
 |---|---|
 | **A01 Control de acceso** | Rol de ejecución sin superusuario ni DDL; rol de migración (Flyway) aparte; rol de replicación solo `REPLICATION`; `pg_hba` por CIDR; NSG: 5432 solo desde los nodos |
-| **A02 Fallas criptográficas** | TLS entre aplicación → BD y primaria → réplica (el APF2 lo dejó como riesgo aceptado: se corrige aquí); SCRAM-SHA-256; discos y Blob cifrados en reposo; respaldos cifrados |
+| **A02 Fallas criptográficas** | TLS entre aplicación → BD y primaria → réplica (al iniciar el proyecto no iba cifrado: se corrige aquí); SCRAM-SHA-256; discos y Blob cifrados en reposo; respaldos cifrados |
 | **A03 Inyección** | Consultas parametrizadas (JPA); el rol de ejecución no puede usar `COPY PROGRAM`; sin SQL dinámico |
 | **A04 Diseño inseguro** | Modelo de amenazas del servidor de datos; un solo escritor con fencing; RPO/RTO definidos y medidos |
-| **A05 Configuración incorrecta** | Sin IP ni puerto público para la BD; `listen_addresses` restringido; corregir el `CONNECT` a PUBLIC (ya detectado en el APF2); NSG de denegación por defecto; contenedor no root |
+| **A05 Configuración incorrecta** | Sin IP ni puerto público para la BD; `listen_addresses` restringido; revisar el permiso `CONNECT` a PUBLIC (hallazgo de la revisión inicial, por verificar); NSG de denegación por defecto; contenedor no root |
 | **A06 Componentes vulnerables** | Imagen `postgis` fijada por versión y digest; escaneo con Trivy en el CI; plan de actualización |
 | **A07 Fallas de autenticación** | Contraseñas generadas y rotadas, sin credenciales por defecto; SSH solo con llave y `fail2ban`; acceso a `vm-db` por salto desde un nodo |
 | **A08 Integridad de software y datos** | Imágenes versionadas desde registro; `data_checksums`; `pg_verifybackup` en cada respaldo; scripts de despliegue bajo control de versiones |

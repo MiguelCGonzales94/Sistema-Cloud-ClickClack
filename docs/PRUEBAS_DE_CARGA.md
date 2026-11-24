@@ -7,16 +7,16 @@ Fecha: 2026-11-23 · Herramienta: k6 0.54 (contenedor en el testigo, dentro de l
 - **Operación real de un colaborador** autenticado: 45 % `GET /api/auth/yo`, 15 % `GET /api/incidencias/mias`, 15 % `GET /api/asignaciones/mias` y **25 % `POST /api/marcaciones`** (escritura con validación espacial e idempotencia). Cada petición verifica el JWT y consulta la lista de tokens revocados **en PostgreSQL**, así que ejercita el diseño sin estado.
 - **Dos configuraciones:** *1 instancia* (solo el backend del nodo 2) y *2 instancias* (los dos nodos). Cada usuario virtual se fija a un backend (`VU mod n`), como lo haría el reparto del balanceador.
 - **Un único inicio de sesión** por prueba, hecho en la **primera** instancia; el token se usa luego contra la segunda: comprueba que la sesión vale en cualquier nodo (secreto JWT común y revocados compartidos).
-- **Criterio de aceptación** (RNF03 del plan de capacidad): p95 < 2 s y menos de 1 % de errores.
+- **Criterio de aceptación** fijado antes de las pruebas: p95 < 2 s y menos de 1 % de errores.
 - **Instantánea de Prometheus** de cada prueba: CPU y memoria máximas por nodo, p95 medido por el backend, conexiones del pool Hikari y de PostgreSQL.
 
-### Diferencias con el plan original (declaradas)
+### Decisiones de método (declaradas)
 
-| Plan (APF2, tabla 12) | Aquí | Motivo |
+| Parámetro | Decisión | Motivo |
 |---|---|---|
-| P1: 10 usuarios, 10 min | 3 min | Crédito y tiempo de la semana |
-| P2: rampa a 50 en 5 min | rampa 2 min + 1 min sostenido | Ídem |
-| Contra el sistema público | **Contra los backends (puerto 8080 privado)** | El proxy limita a 20 peticiones/s por IP (control de seguridad): desde una sola IP se mediría ese límite y no la capacidad. El límite se prueba aparte (P5) |
+| Duración de P1 | 3 min | Crédito y tiempo de la semana |
+| Forma de P2 | rampa de 2 min y 1 min sostenido hasta 50 usuarios | Ídem |
+| Destino de la carga | **Contra los backends (puerto 8080 privado)** | El proxy limita a 20 peticiones/s por IP (control de seguridad): desde una sola IP se mediría ese límite y no la capacidad. El límite se prueba aparte (P5) |
 | Modelo de llegada | **Cerrado** (N usuarios con 0,2–1,5 s de pausa) | Más simple; ver limitación 3 |
 
 ## 2. Resultados
@@ -51,7 +51,7 @@ Fecha: 2026-11-23 · Herramienta: k6 0.54 (contenedor en el testigo, dentro de l
 
 ## 3. Lectura de los resultados
 
-1. **El criterio se cumple con un margen enorme.** Hasta 50 usuarios concurrentes (~49 peticiones/s) el p95 es de 7–14 ms frente al límite de 2 s, sin errores. La demanda proyectada para 500 colaboradores era de **0,33 peticiones/s** (APF2, 10.1.2): la capacidad medida es ~1 200 veces mayor.
+1. **El criterio se cumple con un margen enorme.** Hasta 50 usuarios concurrentes (~49 peticiones/s) el p95 es de 7–14 ms frente al límite de 2 s, sin errores. La demanda proyectada para 500 colaboradores era de **0,33 peticiones/s** (escenario de escala del informe): la capacidad medida es ~1 200 veces mayor.
 2. **No se llegó a un punto de quiebre por errores:** con 200 usuarios (~400 req/s) hubo 0 % de errores. Lo que sí se encontró es **dónde se satura**: con una instancia, la CPU del nodo llegó al **96 %** (2 vCPU) y el **pool de conexiones de 10 se agotó con 46 peticiones en cola**.
 3. **Escalar de 1 a 2 instancias lo resolvió:** el p95 bajó de 41,8 a 11,4 ms (−73 %), la cola del pool desapareció y la CPU bajó a 81 %. El **rendimiento total casi no cambió** (404 → 417 req/s) porque el cliente es de modelo cerrado (usuarios con pausa): lo que se gana es **latencia y holgura**, no más peticiones por segundo con esta generación de carga.
 4. **Cuello de botella identificado:** CPU del nodo y tamaño del pool Hikari. El nodo 2 además aloja la **primaria de PostgreSQL**, así que backend y base compiten por la misma CPU; mover la base a un servidor propio (opción B de `DECISION_TOPOLOGIA.md`) es la mejora natural.

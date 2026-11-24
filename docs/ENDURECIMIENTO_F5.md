@@ -81,7 +81,7 @@ El script `infra/scripts/verificar-despliegue.sh` ahora reconoce el diseño de d
 
 ## 7. Qué sigue pendiente de la F5
 
-- **Segundo factor** para supervisores y RR. HH. (pendiente del APF2; se declarará como riesgo aceptado si no hay tiempo).
+- **Segundo factor** para supervisores y RR. HH. (se declarará como riesgo aceptado si no hay tiempo).
 - **Rol de base de datos de ejecución sin DDL** (hoy la aplicación entra como propietario).
 - **Prueba ofensiva básica** independiente. (El escaneo en CI ya está hecho.)
 - Renovación de certificados internos y gestión de secretos con Key Vault.
